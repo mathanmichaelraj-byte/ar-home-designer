@@ -78,7 +78,7 @@ ar-interior-designer/
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourname/ar-interior-designer.git
+git clone https://github.com/mathanmichaelraj-byte/ar-home-designer.git
 cd ar-interior-designer
 
 # Install server dependencies
