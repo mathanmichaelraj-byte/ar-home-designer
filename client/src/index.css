@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&family=JetBrains+Mono&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { @apply bg-surface text-white; }
+  * { box-sizing: border-box; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2 rounded-lg
+           transition-all duration-200 hover:shadow-glow;
+  }
+  .btn-ghost {
+    @apply border border-line hover:border-brand-500 text-gray-300 hover:text-white
+           font-medium px-4 py-2 rounded-lg transition-all duration-200;
+  }
+  .card {
+    @apply bg-panel border border-line rounded-xl p-5 transition-all duration-200;
+  }
+  .input {
+    @apply bg-surface border border-line rounded-lg px-3 py-2 text-white placeholder-gray-500
+           focus:outline-none focus:border-brand-500 w-full transition-colors;
+  }
+}
