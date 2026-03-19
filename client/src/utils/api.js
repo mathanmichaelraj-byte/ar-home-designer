@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || '/api',
+  baseURL: 'https://ar-home-designer.onrender.com/api',
 });
 
 // Attach JWT to every request
