@@ -1,0 +1,316 @@
+{
+  "info": {
+    "name": "InteriorAR API",
+    "description": "Complete API collection for the InteriorAR platform. Set the `baseUrl` and `token` variables before use.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "Paste your JWT token here after login or register"
+    },
+    {
+      "key": "projectId",
+      "value": "",
+      "type": "string",
+      "description": "Paste a project _id here after creating one"
+    },
+    {
+      "key": "furnitureId",
+      "value": "",
+      "type": "string",
+      "description": "Paste a furniture _id here"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mathan\",\n  \"email\": \"mathan@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"mathan@example.com\",\n  \"password\": \"password123\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/auth/me",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mathan Updated\"\n}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "List Projects",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/projects"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/projects",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Living Room\",\n  \"roomDimensions\": {\n    \"width\": 5,\n    \"length\": 6,\n    \"height\": 2.8\n  },\n  \"wallColor\": \"#f5f5f0\",\n  \"objects\": []\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Project",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/projects/{{projectId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/projects/{{projectId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Living Room\",\n  \"wallColor\": \"#e8e0d5\"\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Project",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/projects/{{projectId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Share Link",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/api/projects/{{projectId}}/share"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Shared Project (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/projects/shared/PASTE_SHARE_TOKEN_HERE"
+          },
+          "response": []
+        },
+        {
+          "name": "AI Layout Suggestion - Living Room",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}/suggest?style=living",
+              "query": [{ "key": "style", "value": "living" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Layout Suggestion - Bedroom",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}/suggest?style=bedroom",
+              "query": [{ "key": "style", "value": "bedroom" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Layout Suggestion - Office",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}/suggest?style=office",
+              "query": [{ "key": "style", "value": "office" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Layout Suggestion - Dining",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}/suggest?style=dining",
+              "query": [{ "key": "style", "value": "dining" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Layout Suggestion - Kitchen",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}/suggest?style=kitchen",
+              "query": [{ "key": "style", "value": "kitchen" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AI Layout Suggestion - Bathroom",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/{{projectId}}/suggest?style=bathroom",
+              "query": [{ "key": "style", "value": "bathroom" }]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Furniture",
+      "item": [
+        {
+          "name": "List All Furniture",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/furniture"
+          },
+          "response": []
+        },
+        {
+          "name": "List Furniture by Type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/furniture?type=sofa",
+              "query": [{ "key": "type", "value": "sofa" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Furniture",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/furniture?search=table",
+              "query": [{ "key": "search", "value": "table" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Single Furniture Item",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/furniture/{{furnitureId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Furniture Item (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/furniture",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Custom Chair\",\n  \"type\": \"chair\",\n  \"modelUrl\": \"/models/chair.glb\",\n  \"thumbnailUrl\": \"/thumbnails/chair_NE.png\",\n  \"dimensions\": {\n    \"width\": 0.6,\n    \"depth\": 0.6,\n    \"height\": 0.9\n  },\n  \"price\": 199\n}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/health"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
