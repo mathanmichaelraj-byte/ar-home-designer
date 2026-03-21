@@ -22,8 +22,6 @@ app.use('/api/auth',      require('./routes/authRoutes'));
 app.use('/api/projects',  require('./routes/projectRoutes'));
 app.use('/api/furniture', require('./routes/furnitureRoutes'));
 
-app.use('/api/houses', require('./routes/houseRoutes'));
-
 app.get('/api/health', (req, res) => res.json({ status: 'OK', timestamp: new Date() }));
 app.use(errorHandler);
 
