@@ -58,21 +58,40 @@ const Room = ({ dimensions, wallColor }) => {
   const color = wallColor || '#f5f5f0';
   return (
     <group>
+     {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[width, length]} />
         <meshStandardMaterial color="#c8b89a" roughness={0.9} />
       </mesh>
-      <mesh position={[0, height / 2, -length / 2]}>
+
+      {/* Ceiling */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, height, 0]}>
+        <planeGeometry args={[width, length]} />
+        <meshStandardMaterial color="#ece8e0" roughness={0.9} side={2} />
+      </mesh>
+
+      {/* Back wall */}
+      <mesh position={[0, height / 2, -length / 2]} receiveShadow>
         <planeGeometry args={[width, height]} />
         <meshStandardMaterial color={color} roughness={0.8} />
       </mesh>
-      <mesh position={[-width / 2, height / 2, 0]} rotation={[0, Math.PI / 2, 0]}>
+
+      {/* Left wall */}
+      <mesh position={[-width / 2, height / 2, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
         <planeGeometry args={[length, height]} />
         <meshStandardMaterial color={color} roughness={0.8} />
       </mesh>
-      <mesh position={[width / 2, height / 2, 0]} rotation={[0, -Math.PI / 2, 0]}>
+
+      {/* Right wall */}
+      <mesh position={[width / 2, height / 2, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow>
         <planeGeometry args={[length, height]} />
         <meshStandardMaterial color={color} roughness={0.8} />
+      </mesh>
+
+      {/* Front wall — semi-transparent */}
+      <mesh position={[0, height / 2, length / 2]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[width, height]} />
+        <meshStandardMaterial color={color} roughness={0.8} transparent opacity={0.15} />
       </mesh>
     </group>
   );

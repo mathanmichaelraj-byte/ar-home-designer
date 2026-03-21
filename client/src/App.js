@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
+import { HouseProvider } from './context/HouseContext';
 import HouseDashboardPage from './pages/HouseDashboardPage';
 import HouseDesignerPage from './pages/HouseDesignerPage';
 import Navbar from './components/Navbar';
