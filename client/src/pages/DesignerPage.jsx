@@ -192,13 +192,13 @@ const PropertiesPanel = ({ objects = [], selectedIndex, onSelect, updateObject, 
   const [localScale, setLocalScale] = useState({ x: 1, y: 1, z: 1 });
   const [localColor, setLocalColor] = useState('#cccccc');
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const obj = selectedIndex !== null ? objects[selectedIndex] : null;
-    if (obj) {
-      setLocalScale(obj.scale || { x: 1, y: 1, z: 1 });
-      setLocalColor(obj.color || '#cccccc');
+    if (selected) {
+      setLocalScale(selected.scale || { x: 1, y: 1, z: 1 });
+      setLocalColor(selected.color || '#cccccc');
     }
-  }, [selectedIndex, objects]);
+  }, [selectedIndex]);
 
   const update = (key, subKey, val) => {
     if (!selected) return;
