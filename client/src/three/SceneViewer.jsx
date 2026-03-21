@@ -1,4 +1,4 @@
-import React, { Suspense, useRef, useCallback } from 'react';
+import React, { Suspense, useEffect, useRef, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, Environment, TransformControls } from '@react-three/drei';
 import { useGLTF } from '@react-three/drei';
