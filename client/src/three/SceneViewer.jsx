@@ -4,11 +4,6 @@ import { OrbitControls, Grid, Environment, TransformControls } from '@react-thre
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
-const CEILING_KEYWORDS = ['ceiling', 'fan', 'chandelier', 'pendant'];
-
-const isCeilingItem = (name = '') =>
-  CEILING_KEYWORDS.some(k => name.toLowerCase().includes(k));
-
 // ---- Furniture GLB Model ----
 const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdate }) => {
   const groupRef = useRef();
