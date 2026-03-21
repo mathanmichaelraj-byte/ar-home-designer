@@ -177,13 +177,10 @@ const SceneViewer = ({ project, selectedIdx, onSelect, onUpdateObject }) => {
         camera={{ position: [600, 500, 600], fov: 50 }}
         style={{ background: '#0f1117' }}
       >
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[500, 800, 500]} intensity={1.2} castShadow
-        shadow-mapSize-width={2048} shadow-mapSize-height={2048}
-        shadow-camera-far={3000} shadow-camera-near={1}
-        shadow-camera-left={-1000} shadow-camera-right={1000}
-        shadow-camera-top={1000} shadow-camera-bottom={-1000} />
-      <pointLight position={[-300, 300, -300]} intensity={0.4} color="#ffe0b2" />
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow
+          shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+        <pointLight position={[-3, 3, -3]} intensity={0.4} color="#ffe0b2" />
 
         <Suspense fallback={null}>
           <Environment preset="apartment" />
@@ -192,11 +189,11 @@ const SceneViewer = ({ project, selectedIdx, onSelect, onUpdateObject }) => {
           {/* Invisible floor click to deselect */}
           <mesh
             rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, -1, 0]}
+            position={[0, -0.01, 0]}
             onClick={() => onSelect(null)}
             visible={false}
           >
-            <planeGeometry args={[10000, 10000]} />
+            <planeGeometry args={[100, 100]} />
             <meshBasicMaterial />
           </mesh>
 
@@ -225,12 +222,11 @@ const SceneViewer = ({ project, selectedIdx, onSelect, onUpdateObject }) => {
         </Suspense>
 
         <Grid
-          args={[2000, 2000]}
+          args={[20, 20]}
           position={[0, 0, 0]}
-          cellSize={100}
           cellColor="#252a3d"
           sectionColor="#3a3f55"
-          fadeDistance={2000}
+          fadeDistance={20}
           infiniteGrid
         />
         <OrbitControls
