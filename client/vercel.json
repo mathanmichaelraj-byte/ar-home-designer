@@ -1,5 +1,9 @@
 {
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "env":{
+    "GENERATE_SOURCEMAP": "false",
+    "REACT_APP_API_URL": "https://ar-home-designer.onrender.com/api"
+  }
 }
