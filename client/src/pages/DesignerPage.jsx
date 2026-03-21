@@ -68,9 +68,7 @@ const DesignerPage = () => {
       <p className="text-gray-400">Project not found.</p>
     </div>
   );
-
-  const selectedObject = selectedIdx !== null ? currentProject.objects?.[selectedIdx] : null;
-
+  
   return (
     <div className="h-screen flex flex-col bg-surface pt-16">
       {/* Style Modal */}
