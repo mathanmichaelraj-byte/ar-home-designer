@@ -11,6 +11,8 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+const SCENE_SCALE = 100;
+
 
 // ---- Furniture GLB Model ----
 const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdate }) => {
@@ -19,7 +21,6 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
   const { scene } = useGLTF(modelUrl);
   const clone = React.useMemo(() => scene.clone(), [scene]);
 
-  // Apply tint color to all meshes in the model
   useEffect(() => {
     if (!clone || !object.color || object.color === '#cccccc') return;
     clone.traverse((child) => {
@@ -31,51 +32,54 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
     });
   }, [clone, object.color]);
 
-  const handleTransform = useCallback(() => {
-    if (!groupRef.current) return;
-    const p = groupRef.current.position;
-    const r = groupRef.current.rotation;
-    onUpdate(index, {
-      position: { x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3) },
-      rotation: { x: +r.x.toFixed(3), y: +r.y.toFixed(3), z: +r.z.toFixed(3) },
-    });
-  }, [index, onUpdate]);
+    const handleTransform = useCallback(() => {
+      if (!groupRef.current) return;
+      const p = groupRef.current.position;
+      const r = groupRef.current.rotation;
+      const s = groupRef.current.scale;
+      onUpdate(index, {
+        // Divide back to meters for storage
+        position: { x: +(p.x / SCENE_SCALE).toFixed(3), y: +(p.y / SCENE_SCALE).toFixed(3), z: +(p.z / SCENE_SCALE).toFixed(3) },
+        rotation: { x: +r.x.toFixed(3), y: +r.y.toFixed(3), z: +r.z.toFixed(3) },
+      });
+    }, [index, onUpdate]);
 
-  return (
-    <>
-      <group
-        ref={groupRef}
-        position={[object.position?.x||0, object.position?.y||0, object.position?.z||0]}
-        rotation={[object.rotation?.x||0, object.rotation?.y||0, object.rotation?.z||0]}
-        scale={[object.scale?.x||1, object.scale?.y||1, object.scale?.z||1]}
-        onClick={(e) => { e.stopPropagation(); onSelect(index); }}
-      >
-        <group scale={[0.01, 0.01, 0.01]}>
+    return (
+      <>
+        <group
+          ref={groupRef}
+          // Multiply stored meter positions by SCENE_SCALE for rendering
+          position={[
+            (object.position?.x || 0) * SCENE_SCALE,
+            (object.position?.y || 0) * SCENE_SCALE,
+            (object.position?.z || 0) * SCENE_SCALE,
+          ]}
+          rotation={[object.rotation?.x||0, object.rotation?.y||0, object.rotation?.z||0]}
+          scale={[object.scale?.x||1, object.scale?.y||1, object.scale?.z||1]}
+          onClick={(e) => { e.stopPropagation(); onSelect(index); }}
+        >
+          {/* No inner 0.01 scale — models render at natural cm size */}
           <primitive object={clone} castShadow receiveShadow />
+          {isSelected && (
+            <mesh>
+              <boxGeometry args={[110, 110, 110]} />
+              <meshBasicMaterial color="#4f6ef7" wireframe />
+            </mesh>
+          )}
         </group>
-        {isSelected && (
-          <mesh>
-            <boxGeometry args={[1.1, 1.1, 1.1]} />
-            <meshBasicMaterial color="#4f6ef7" wireframe />
-          </mesh>
+        {isSelected && groupRef.current && (
+          <TransformControls
+            object={groupRef.current}
+            mode="translate"
+            onMouseDown={() => { if (orbitRef.current) orbitRef.current.enabled = false; }}
+            onMouseUp={() => {
+              if (orbitRef.current) orbitRef.current.enabled = true;
+              handleTransform();
+            }}
+          />
         )}
-      </group>
-      {isSelected && groupRef.current && (
-        <TransformControls
-          object={groupRef.current}
-          mode="translate"
-          showX={true}
-          showY={true}
-          showZ={true}
-          onMouseDown={() => { if (orbitRef.current) orbitRef.current.enabled = false; }}
-          onMouseUp={() => {
-            if (orbitRef.current) orbitRef.current.enabled = true;
-            handleTransform();
-          }}
-        />
-      )}
-    </>
-  );
+      </>
+    );
 };
 
 // ---- Fallback Box ----
@@ -98,18 +102,18 @@ const FurnitureItem = ({ object, index, isSelected, onSelect, onUpdate, orbitRef
     <>
       <group
         ref={groupRef}
-        position={[object.position?.x||0, object.position?.y||0, object.position?.z||0]}
+        position={[
+          (object.position?.x||0) * SCENE_SCALE,
+          (object.position?.y||0) * SCENE_SCALE,
+          (object.position?.z||0) * SCENE_SCALE,
+        ]}
         rotation={[object.rotation?.x||0, object.rotation?.y||0, object.rotation?.z||0]}
         scale={[object.scale?.x||1, object.scale?.y||1, object.scale?.z||1]}
         onClick={(e) => { e.stopPropagation(); onSelect(index); }}
       >
         <mesh castShadow receiveShadow>
-          <boxGeometry args={[0.8, 0.8, 0.8]} />
-          <meshStandardMaterial
-            color={object.color || '#cccccc'}
-            emissive={isSelected ? '#4f6ef7' : '#000'}
-            emissiveIntensity={isSelected ? 0.25 : 0}
-          />
+          <boxGeometry args={[80, 80, 80]} />
+          <meshStandardMaterial color={object.color||'#cccccc'} />
         </mesh>
       </group>
       {isSelected && groupRef.current && (
@@ -128,43 +132,35 @@ const FurnitureItem = ({ object, index, isSelected, onSelect, onUpdate, orbitRef
 // ---- Room ----
 const Room = ({ dimensions, wallColor }) => {
   const { width = 5, length = 5, height = 2.8 } = dimensions || {};
+  const w = width * SCENE_SCALE;
+  const l = length * SCENE_SCALE;
+  const h = height * SCENE_SCALE;
   const color = wallColor || '#f5f5f0';
 
   return (
     <group>
-      {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[width, length]} />
+        <planeGeometry args={[w, l]} />
         <meshStandardMaterial color="#c8b89a" roughness={0.9} />
       </mesh>
-
-      {/* Ceiling */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, height, 0]}>
-        <planeGeometry args={[width, length]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, h, 0]} receiveShadow>
+        <planeGeometry args={[w, l]} />
         <meshStandardMaterial color="#ece8e0" roughness={0.9} side={2} />
       </mesh>
-
-      {/* Back wall */}
-      <mesh position={[0, height / 2, -length / 2]} receiveShadow>
-        <planeGeometry args={[width, height]} />
+      <mesh position={[0, h / 2, -l / 2]} receiveShadow>
+        <planeGeometry args={[w, h]} />
         <meshStandardMaterial color={color} roughness={0.8} />
       </mesh>
-
-      {/* Left wall */}
-      <mesh position={[-width / 2, height / 2, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
-        <planeGeometry args={[length, height]} />
+      <mesh position={[-w / 2, h / 2, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
+        <planeGeometry args={[l, h]} />
         <meshStandardMaterial color={color} roughness={0.8} />
       </mesh>
-
-      {/* Right wall */}
-      <mesh position={[width / 2, height / 2, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow>
-        <planeGeometry args={[length, height]} />
+      <mesh position={[w / 2, h / 2, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow>
+        <planeGeometry args={[l, h]} />
         <meshStandardMaterial color={color} roughness={0.8} />
       </mesh>
-
-      {/* Front wall */}
-      <mesh position={[0, height / 2, length / 2]} rotation={[0, Math.PI, 0]} receiveShadow>
-        <planeGeometry args={[width, height]} />
+      <mesh position={[0, h / 2, l / 2]} rotation={[0, Math.PI, 0]} receiveShadow>
+        <planeGeometry args={[w, h]} />
         <meshStandardMaterial color={color} roughness={0.8} transparent opacity={0.15} />
       </mesh>
     </group>
@@ -180,7 +176,7 @@ const SceneViewer = ({ project, selectedIdx, onSelect, onUpdateObject }) => {
     <div className="w-full h-full">
       <Canvas
         shadows
-        camera={{ position: [6, 5, 6], fov: 50 }}
+        camera={{ position: [600, 500, 600], fov: 50 }}
         style={{ background: '#0f1117' }}
       >
         <ambientLight intensity={0.6} />
@@ -228,11 +224,12 @@ const SceneViewer = ({ project, selectedIdx, onSelect, onUpdateObject }) => {
         </Suspense>
 
         <Grid
-          args={[20, 20]}
+          args={[2000, 2000]}
           position={[0, 0, 0]}
+          cellSize={100}
           cellColor="#252a3d"
           sectionColor="#3a3f55"
-          fadeDistance={20}
+          fadeDistance={2000}
           infiniteGrid
         />
         <OrbitControls
