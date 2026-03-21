@@ -46,4 +46,16 @@ export const furnitureAPI = {
   get: (id) => api.get(`/furniture/${id}`),
 };
 
+export const housesAPI = {
+  list: () => api.get('/houses'),
+  get: (id) => api.get(`/houses/${id}`),
+  create: (data) => api.post('/houses', data),
+  update: (id, data) => api.put(`/houses/${id}`, data),
+  delete: (id) => api.delete(`/houses/${id}`),
+  share: (id) => api.post(`/houses/${id}/share`),
+  addRoom: (id, data) => api.post(`/houses/${id}/rooms`, data),
+  updateRoom: (id, roomId, data) => api.put(`/houses/${id}/rooms/${roomId}`, data),
+  deleteRoom: (id, roomId) => api.delete(`/houses/${id}/rooms/${roomId}`),
+};
+
 export default api;
