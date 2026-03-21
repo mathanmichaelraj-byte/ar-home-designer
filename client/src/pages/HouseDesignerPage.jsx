@@ -32,7 +32,8 @@ const HouseDesignerPage = () => {
 
   useEffect(() => {
     if (currentHouse?.name) setHouseName(currentHouse.name);
-  }, [currentHouse?._id]);
+  }, [currentHouse?._id, currentHouse?.name]);
+
 
   const currentRoom = currentHouse?.rooms?.[selectedRoomIdx] || null;
 
@@ -287,11 +288,12 @@ const HousePropertiesPanel = ({ objects, selectedIndex, onSelect, onUpdate, onRe
   const [localColor, setLocalColor] = useState('#cccccc');
 
   useEffect(() => {
-    if (selected) {
-      setLocalScale(selected.scale || { x: 1, y: 1, z: 1 });
-      setLocalColor(selected.color || '#cccccc');
+    const obj = selectedIndex !== null ? objects[selectedIndex] : null;
+    if (obj) {
+        setLocalScale(obj.scale || { x: 1, y: 1, z: 1 });
+        setLocalColor(obj.color || '#cccccc');
     }
-  }, [selectedIndex]);
+  }, [selectedIndex, objects]);
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -383,10 +385,10 @@ const RoomSettingsOverlay = ({ room, onSave }) => {
 
   useEffect(() => {
     if (room) {
-      setDim(room.dimensions || { width: 5, length: 5, height: 2.8 });
-      setWallColor(room.wallColor || '#f5f5f0');
+        setDim(room.dimensions || { width: 5, length: 5, height: 2.8 });
+        setWallColor(room.wallColor || '#f5f5f0');
     }
-  }, [room?._id]);
+    }, [room?._id, room?.dimensions, room?.wallColor]);
 
   return (
     <div className="absolute bottom-4 right-4">

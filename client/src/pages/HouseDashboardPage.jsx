@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useHouse } from '../context/HouseContext';
-import { housesAPI } from '../utils/api';
 
 const ROOM_EMOJIS = {
   living: '🛋️', bedroom: '🛏️', office: '💼',

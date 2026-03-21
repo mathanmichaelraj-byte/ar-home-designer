@@ -1,8 +1,16 @@
-import React, { Suspense, useEffect, useRef, useCallback } from 'react';
+import React, { Suspense, useRef, useCallback, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, Environment, TransformControls } from '@react-three/drei';
 import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) return null; // silently skip broken models
+    return this.props.children;
+  }
+}
 
 // ---- Furniture GLB Model ----
 const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdate }) => {
@@ -24,14 +32,14 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
   }, [clone, object.color]);
 
   const handleTransform = useCallback(() => {
-  if (!groupRef.current) return;
-  const p = groupRef.current.position;
-  const r = groupRef.current.rotation;
-  onUpdate(index, {
-    position: { x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3) },
-    rotation: { x: +r.x.toFixed(3), y: +r.y.toFixed(3), z: +r.z.toFixed(3) },
-  });
-}, [index, onUpdate]);
+    if (!groupRef.current) return;
+    const p = groupRef.current.position;
+    const r = groupRef.current.rotation;
+    onUpdate(index, {
+      position: { x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3) },
+      rotation: { x: +r.x.toFixed(3), y: +r.y.toFixed(3), z: +r.z.toFixed(3) },
+    });
+  }, [index, onUpdate]);
 
   return (
     <>
@@ -42,7 +50,6 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
         scale={[object.scale?.x||1, object.scale?.y||1, object.scale?.z||1]}
         onClick={(e) => { e.stopPropagation(); onSelect(index); }}
       >
-        {/* Scale down Kenney models from cm to meters */}
         <group scale={[0.01, 0.01, 0.01]}>
           <primitive object={clone} castShadow receiveShadow />
         </group>
@@ -123,55 +130,42 @@ const Room = ({ dimensions, wallColor }) => {
   const { width = 5, length = 5, height = 2.8 } = dimensions || {};
   const color = wallColor || '#f5f5f0';
 
-  // Front wall uses transparent material so camera can see inside
-  const frontWallMat = new THREE.MeshStandardMaterial({
-    color,
-    roughness: 0.8,
-    transparent: true,
-    opacity: 0.15,
-    side: THREE.FrontSide,
-  });
-
-  const wallMat = new THREE.MeshStandardMaterial({ color, roughness: 0.8 });
-  const floorMat = new THREE.MeshStandardMaterial({ color: '#c8b89a', roughness: 0.9 });
-  const ceilMat = new THREE.MeshStandardMaterial({ color: '#ece8e0', roughness: 0.9, side: THREE.BackSide });
-
   return (
     <group>
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[width, length]} />
-        <primitive object={floorMat} attach="material" />
+        <meshStandardMaterial color="#c8b89a" roughness={0.9} />
       </mesh>
 
       {/* Ceiling */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, height, 0]}>
         <planeGeometry args={[width, length]} />
-        <primitive object={ceilMat} attach="material" />
+        <meshStandardMaterial color="#ece8e0" roughness={0.9} side={2} />
       </mesh>
 
       {/* Back wall */}
       <mesh position={[0, height / 2, -length / 2]} receiveShadow>
         <planeGeometry args={[width, height]} />
-        <primitive object={wallMat} attach="material" />
+        <meshStandardMaterial color={color} roughness={0.8} />
       </mesh>
 
       {/* Left wall */}
       <mesh position={[-width / 2, height / 2, 0]} rotation={[0, Math.PI / 2, 0]} receiveShadow>
         <planeGeometry args={[length, height]} />
-        <primitive object={wallMat} attach="material" />
+        <meshStandardMaterial color={color} roughness={0.8} />
       </mesh>
 
       {/* Right wall */}
       <mesh position={[width / 2, height / 2, 0]} rotation={[0, -Math.PI / 2, 0]} receiveShadow>
         <planeGeometry args={[length, height]} />
-        <primitive object={wallMat} attach="material" />
+        <meshStandardMaterial color={color} roughness={0.8} />
       </mesh>
 
-      {/* Front wall — semi-transparent so you can see inside */}
-      <mesh position={[0, height / 2, length / 2]} rotation={[0, Math.PI, 0]}>
+      {/* Front wall */}
+      <mesh position={[0, height / 2, length / 2]} rotation={[0, Math.PI, 0]} receiveShadow>
         <planeGeometry args={[width, height]} />
-        <primitive object={frontWallMat} attach="material" />
+        <meshStandardMaterial color={color} roughness={0.8} transparent opacity={0.15} />
       </mesh>
     </group>
   );
@@ -210,25 +204,26 @@ const SceneViewer = ({ project, selectedIdx, onSelect, onUpdateObject }) => {
           </mesh>
 
           {objects.map((obj, i) => (
-            obj.modelUrl
-              ? <FurnitureModel
-                  key={i}
-                  object={obj}
-                  index={i}
-                  isSelected={selectedIdx === i}
-                  onSelect={onSelect}
-                  onUpdate={onUpdateObject}
-                  orbitRef={orbitRef}
-                />
-              : <FurnitureItem
-                  key={i}
-                  object={obj}
-                  index={i}
-                  isSelected={selectedIdx === i}
-                  onSelect={onSelect}
-                  onUpdate={onUpdateObject}
-                  orbitRef={orbitRef}
-                />
+            <ErrorBoundary key={i}>
+              {obj.modelUrl
+                ? <FurnitureModel
+                    object={obj}
+                    index={i}
+                    isSelected={selectedIdx === i}
+                    onSelect={onSelect}
+                    onUpdate={onUpdateObject}
+                    orbitRef={orbitRef}
+                  />
+                : <FurnitureItem
+                    object={obj}
+                    index={i}
+                    isSelected={selectedIdx === i}
+                    onSelect={onSelect}
+                    onUpdate={onUpdateObject}
+                    orbitRef={orbitRef}
+                  />
+              }
+            </ErrorBoundary>
           ))}
         </Suspense>
 
