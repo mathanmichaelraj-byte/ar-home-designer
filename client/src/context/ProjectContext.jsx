@@ -49,21 +49,29 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [currentProject]);
 
-  const addObject = (furnitureItem) => {
-    const obj = {
-      furnitureId: furnitureItem._id,
-      name: furnitureItem.name,
-      modelUrl: furnitureItem.modelUrl,
-      position: { x: 0, y: 0, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: { x: 1, y: 1, z: 1 },
-      color: '#cccccc',
-    };
-    setCurrentProject((prev) => ({
-      ...prev,
-      objects: [...(prev?.objects || []), obj],
-    }));
+  const CEILING_KEYWORDS = ['ceiling', 'fan', 'chandelier', 'pendant'];
+
+const addObject = (furnitureItem) => {
+  const isCeiling = CEILING_KEYWORDS.some(k =>
+    furnitureItem.name.toLowerCase().includes(k)
+  );
+
+  const obj = {
+    furnitureId: furnitureItem._id,
+    name: furnitureItem.name,
+    modelUrl: furnitureItem.modelUrl,
+    position: { x: 0, y: isCeiling ? 2.6 : 0, z: 0 },
+    rotation: { x: 0, y: 0, z: 0 },
+    scale: { x: 1, y: 1, z: 1 },
+    color: '#cccccc',
   };
+
+  setCurrentProject((prev) => ({
+    ...prev,
+    objects: [...(prev?.objects || []), obj],
+  }));
+};
+
 
   const updateObject = (index, updates) => {
     setCurrentProject((prev) => {
