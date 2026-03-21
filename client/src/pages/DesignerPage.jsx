@@ -68,7 +68,7 @@ const DesignerPage = () => {
       <p className="text-gray-400">Project not found.</p>
     </div>
   );
-  
+
   return (
     <div className="h-screen flex flex-col bg-surface pt-16">
       {/* Style Modal */}
@@ -199,8 +199,10 @@ const PropertiesPanel = ({ objects = [], selectedIndex, onSelect, updateObject, 
     }
   }, [selectedIndex]);
 
-  const update = (key, subKey, val) =>
+  const update = (key, subKey, val) => {
+    if (!selected) return;
     updateObject(selectedIndex, { [key]: { ...selected[key], [subKey]: parseFloat(val) || 0 } });
+  };
 
   const handleScaleChange = (axis, val) => {
     const updated = { ...localScale, [axis]: parseFloat(val) || 0.1 };
