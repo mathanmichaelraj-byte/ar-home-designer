@@ -7,12 +7,10 @@ class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
   static getDerivedStateFromError() { return { hasError: true }; }
   render() {
-    if (this.state.hasError) return null;
+    if (this.state.hasError) return null; // silently skip broken models
     return this.props.children;
   }
 }
-const SCENE_SCALE = 100;
-
 
 // ---- Furniture GLB Model ----
 const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdate }) => {
@@ -36,7 +34,9 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
       if (!groupRef.current) return;
       const p = groupRef.current.position;
       const r = groupRef.current.rotation;
+      const s = groupRef.current.scale;
       onUpdate(index, {
+        // Divide back to meters for storage
         position: { x: +(p.x / SCENE_SCALE).toFixed(3), y: +(p.y / SCENE_SCALE).toFixed(3), z: +(p.z / SCENE_SCALE).toFixed(3) },
         rotation: { x: +r.x.toFixed(3), y: +r.y.toFixed(3), z: +r.z.toFixed(3) },
       });
@@ -46,6 +46,7 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
       <>
         <group
           ref={groupRef}
+          // Multiply stored meter positions by SCENE_SCALE for rendering
           position={[
             (object.position?.x || 0) * SCENE_SCALE,
             (object.position?.y || 0) * SCENE_SCALE,
@@ -55,6 +56,7 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
           scale={[object.scale?.x||1, object.scale?.y||1, object.scale?.z||1]}
           onClick={(e) => { e.stopPropagation(); onSelect(index); }}
         >
+          {/* No inner 0.01 scale — models render at natural cm size */}
           <primitive object={clone} castShadow receiveShadow />
           {isSelected && (
             <mesh>
@@ -98,18 +100,18 @@ const FurnitureItem = ({ object, index, isSelected, onSelect, onUpdate, orbitRef
     <>
       <group
         ref={groupRef}
-        position={[
-          (object.position?.x||0) * SCENE_SCALE,
-          (object.position?.y||0) * SCENE_SCALE,
-          (object.position?.z||0) * SCENE_SCALE,
-        ]}
+        position={[object.position?.x||0, object.position?.y||0, object.position?.z||0]}
         rotation={[object.rotation?.x||0, object.rotation?.y||0, object.rotation?.z||0]}
         scale={[object.scale?.x||1, object.scale?.y||1, object.scale?.z||1]}
         onClick={(e) => { e.stopPropagation(); onSelect(index); }}
       >
         <mesh castShadow receiveShadow>
-          <boxGeometry args={[80, 80, 80]} />
-          <meshStandardMaterial color={object.color||'#cccccc'} />
+          <boxGeometry args={[0.8, 0.8, 0.8]} />
+          <meshStandardMaterial
+            color={object.color || '#cccccc'}
+            emissive={isSelected ? '#4f6ef7' : '#000'}
+            emissiveIntensity={isSelected ? 0.25 : 0}
+          />
         </mesh>
       </group>
       {isSelected && groupRef.current && (
@@ -125,6 +127,7 @@ const FurnitureItem = ({ object, index, isSelected, onSelect, onUpdate, orbitRef
   );
 };
 
+const SCENE_SCALE = 100;
 // ---- Room ----
 const Room = ({ dimensions, wallColor }) => {
   const { width = 5, length = 5, height = 2.8 } = dimensions || {};
@@ -175,10 +178,13 @@ const SceneViewer = ({ project, selectedIdx, onSelect, onUpdateObject }) => {
         camera={{ position: [600, 500, 600], fov: 50 }}
         style={{ background: '#0f1117' }}
       >
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[5, 8, 5]} intensity={1.2} castShadow
-          shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
-        <pointLight position={[-3, 3, -3]} intensity={0.4} color="#ffe0b2" />
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[500, 800, 500]} intensity={1.2} castShadow
+        shadow-mapSize-width={2048} shadow-mapSize-height={2048}
+        shadow-camera-far={3000} shadow-camera-near={1}
+        shadow-camera-left={-1000} shadow-camera-right={1000}
+        shadow-camera-top={1000} shadow-camera-bottom={-1000} />
+      <pointLight position={[-300, 300, -300]} intensity={0.4} color="#ffe0b2" />
 
         <Suspense fallback={null}>
           <Environment preset="apartment" />
@@ -187,11 +193,11 @@ const SceneViewer = ({ project, selectedIdx, onSelect, onUpdateObject }) => {
           {/* Invisible floor click to deselect */}
           <mesh
             rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, -0.01, 0]}
+            position={[0, -1, 0]}
             onClick={() => onSelect(null)}
             visible={false}
           >
-            <planeGeometry args={[100, 100]} />
+            <planeGeometry args={[10000, 10000]} />
             <meshBasicMaterial />
           </mesh>
 
