@@ -188,7 +188,6 @@ const DesignerPage = () => {
 const PropertiesPanel = ({ objects = [], selectedIndex, onSelect, updateObject, removeObject, onDeselect }) => {
   const selected = selectedIndex !== null ? objects[selectedIndex] : null;
 
-  // Local state to avoid reset issues
   const [localScale, setLocalScale] = useState({ x: 1, y: 1, z: 1 });
   const [localColor, setLocalColor] = useState('#cccccc');
 
@@ -198,7 +197,7 @@ const PropertiesPanel = ({ objects = [], selectedIndex, onSelect, updateObject, 
       setLocalScale(selected.scale || { x: 1, y: 1, z: 1 });
       setLocalColor(selected.color || '#cccccc');
     }
-  }, [selectedIndex]);
+  }, [selected, selectedIndex]);
 
   const update = (key, subKey, val) => {
     if (!selected) return;
@@ -364,12 +363,10 @@ const RoomSettings = ({ project, onSave }) => {
   }, [project?._id, project?.roomDimensions, project?.wallColor]);
 
   const handleDimChange = (key, val) => {
-    // Allow empty string while typing — don't save yet
     setDim((prev) => ({ ...prev, [key]: val }));
   };
 
   const handleDimBlur = (key, val) => {
-    // On blur, parse and save — fallback to 1 if empty/invalid
     const parsed = parseFloat(val);
     const final = isNaN(parsed) || parsed < 1 ? 1 : parsed > 30 ? 30 : parsed;
     const updated = { ...dim, [key]: final };
