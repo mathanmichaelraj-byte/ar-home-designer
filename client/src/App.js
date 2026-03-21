@@ -18,6 +18,7 @@ function App() {
   return (
     <AuthProvider>
       <ProjectProvider>
+        <HouseProvider>
         <BrowserRouter>
           <Navbar />
           <Routes>
@@ -39,6 +40,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
+        </HouseProvider>
       </ProjectProvider>
     </AuthProvider>
   );
