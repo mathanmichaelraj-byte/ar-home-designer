@@ -161,8 +161,9 @@ const DesignerPage = () => {
           {sidebarTab === 'furniture'
             ? <FurniturePanel />
             : <PropertiesPanel
-                object={selectedObject}
-                index={selectedIdx}
+                objects={currentProject.objects || []}
+                selectedIndex={selectedIdx}
+                onSelect={handleObjectSelect}
                 updateObject={updateObject}
                 removeObject={removeObject}
                 onDeselect={() => { setSelectedIdx(null); setSidebarTab('furniture'); }}
@@ -186,54 +187,161 @@ const DesignerPage = () => {
 };
 
 // --- Properties Panel ---
-const PropertiesPanel = ({ object, index, updateObject, removeObject, onDeselect }) => {
-  if (!object) return (
-    <div className="flex-1 flex items-center justify-center p-6 text-center">
-      <p className="text-gray-500 text-sm">Select a furniture item in the 3D view to edit its properties.</p>
-    </div>
-  );
+const PropertiesPanel = ({ objects = [], selectedIndex, onSelect, updateObject, removeObject, onDeselect }) => {
+  const selected = selectedIndex !== null ? objects[selectedIndex] : null;
+
+  // Local state to avoid reset issues
+  const [localScale, setLocalScale] = useState({ x: 1, y: 1, z: 1 });
+  const [localColor, setLocalColor] = useState('#cccccc');
+
+  useEffect(() => {
+    if (selected) {
+      setLocalScale(selected.scale || { x: 1, y: 1, z: 1 });
+      setLocalColor(selected.color || '#cccccc');
+    }
+  }, [selectedIndex]);
 
   const update = (key, subKey, val) =>
-    updateObject(index, { [key]: { ...object[key], [subKey]: parseFloat(val) || 0 } });
+    updateObject(selectedIndex, { [key]: { ...selected[key], [subKey]: parseFloat(val) || 0 } });
+
+  const handleScaleChange = (axis, val) => {
+    const updated = { ...localScale, [axis]: parseFloat(val) || 0.1 };
+    setLocalScale(updated);
+    updateObject(selectedIndex, { scale: updated });
+  };
+
+  const handleColorChange = (val) => {
+    setLocalColor(val);
+    updateObject(selectedIndex, { color: val });
+  };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-5">
-      <div className="flex items-center justify-between">
-        <h3 className="text-white font-medium text-sm">{object.name}</h3>
-        <button onClick={onDeselect} className="text-gray-500 hover:text-white text-xs">✕</button>
-      </div>
-
-      {[
-        { label: 'Position', key: 'position', axes: ['x','y','z'], step: 0.1 },
-        { label: 'Rotation (rad)', key: 'rotation', axes: ['x','y','z'], step: 0.1 },
-        { label: 'Scale', key: 'scale', axes: ['x','y','z'], step: 0.05, min: 0.1 },
-      ].map(({ label, key, axes, step, min }) => (
-        <div key={key}>
-          <p className="text-xs text-gray-400 font-medium mb-2">{label}</p>
-          <div className="grid grid-cols-3 gap-1">
-            {axes.map((axis) => (
-              <div key={axis}>
-                <label className="text-xs text-gray-600 uppercase">{axis}</label>
-                <input type="number" step={step} min={min} className="input text-xs py-1"
-                  value={object[key]?.[axis] ?? 0}
-                  onChange={(e) => update(key, axis, e.target.value)} />
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Object list */}
+      <div className="border-b border-border">
+        <p className="text-xs text-gray-500 font-medium px-3 pt-3 pb-2">
+          Objects in room ({objects.length})
+        </p>
+        <div className="max-h-48 overflow-y-auto">
+          {objects.length === 0 ? (
+            <p className="text-xs text-gray-600 px-3 pb-3">No objects added yet.</p>
+          ) : (
+            objects.map((obj, i) => (
+              <div
+                key={i}
+                onClick={() => onSelect(i)}
+                className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors ${
+                  selectedIndex === i
+                    ? 'bg-brand-500/10 border-l-2 border-brand-500'
+                    : 'hover:bg-surface border-l-2 border-transparent'
+                }`}
+              >
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <div className="w-2 h-2 rounded-full bg-brand-500/60 shrink-0" />
+                  <span className="text-xs text-white truncate">{obj.name}</span>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeObject(i); if (selectedIndex === i) onDeselect(); }}
+                  className="text-gray-600 hover:text-red-400 text-xs ml-2 shrink-0"
+                >
+                  ✕
+                </button>
               </div>
-            ))}
-          </div>
+            ))
+          )}
         </div>
-      ))}
-
-      <div>
-        <p className="text-xs text-gray-400 font-medium mb-2">Color</p>
-        <input type="color" value={object.color || '#cccccc'}
-          onChange={(e) => updateObject(index, { color: e.target.value })}
-          className="w-full h-9 rounded-lg cursor-pointer bg-surface border border-border" />
       </div>
 
-      <button onClick={() => { removeObject(index); onDeselect(); }}
-        className="w-full py-2 text-xs text-red-400 border border-red-500/30 hover:bg-red-500/10 rounded-lg transition-colors">
-        🗑 Remove from room
-      </button>
+      {/* Edit panel */}
+      {selected ? (
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-white font-medium text-sm truncate">{selected.name}</h3>
+            <button onClick={onDeselect} className="text-gray-500 hover:text-white text-xs shrink-0 ml-2">✕</button>
+          </div>
+
+          {/* Position */}
+          <div>
+            <p className="text-xs text-gray-400 font-medium mb-2">Position</p>
+            <div className="grid grid-cols-3 gap-1">
+              {['x', 'y', 'z'].map((axis) => (
+                <div key={axis}>
+                  <label className="text-xs text-gray-600 uppercase">{axis}</label>
+                  <input type="number" step={0.1} className="input text-xs py-1"
+                    value={selected.position?.[axis] ?? 0}
+                    onChange={(e) => update('position', axis, e.target.value)} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Rotation */}
+          <div>
+            <p className="text-xs text-gray-400 font-medium mb-2">Rotation (rad)</p>
+            <div className="grid grid-cols-3 gap-1">
+              {['x', 'y', 'z'].map((axis) => (
+                <div key={axis}>
+                  <label className="text-xs text-gray-600 uppercase">{axis}</label>
+                  <input type="number" step={0.1} className="input text-xs py-1"
+                    value={selected.rotation?.[axis] ?? 0}
+                    onChange={(e) => update('rotation', axis, e.target.value)} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Scale — uses local state to prevent reset */}
+          <div>
+            <p className="text-xs text-gray-400 font-medium mb-2">Scale</p>
+            <div className="grid grid-cols-3 gap-1">
+              {['x', 'y', 'z'].map((axis) => (
+                <div key={axis}>
+                  <label className="text-xs text-gray-600 uppercase">{axis}</label>
+                  <input type="number" step={0.05} min={0.01} className="input text-xs py-1"
+                    value={localScale[axis] ?? 1}
+                    onChange={(e) => handleScaleChange(axis, e.target.value)} />
+                </div>
+              ))}
+            </div>
+            {/* Uniform scale shortcut */}
+            <div className="mt-2">
+              <label className="text-xs text-gray-500 block mb-1">Uniform scale</label>
+              <input type="range" min={0.1} max={5} step={0.05}
+                value={localScale.x}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  const updated = { x: v, y: v, z: v };
+                  setLocalScale(updated);
+                  updateObject(selectedIndex, { scale: updated });
+                }}
+                className="w-full accent-brand-500" />
+              <span className="text-xs text-gray-500">{localScale.x.toFixed(2)}x</span>
+            </div>
+          </div>
+
+          {/* Color — uses local state */}
+          <div>
+            <p className="text-xs text-gray-400 font-medium mb-2">Tint Color</p>
+            <div className="flex items-center gap-2">
+              <input type="color" value={localColor}
+                onChange={(e) => handleColorChange(e.target.value)}
+                className="w-10 h-9 rounded cursor-pointer border border-border bg-surface" />
+              <span className="text-xs text-gray-500">{localColor}</span>
+              <button onClick={() => handleColorChange('#cccccc')}
+                className="text-xs text-gray-500 hover:text-white ml-auto">Reset</button>
+            </div>
+          </div>
+
+          <button onClick={() => { removeObject(selectedIndex); onDeselect(); }}
+            className="w-full py-2 text-xs text-red-400 border border-red-500/30 hover:bg-red-500/10 rounded-lg transition-colors">
+            Remove from room
+          </button>
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center p-6 text-center">
+          <p className="text-gray-500 text-sm">Select an object from the list above or click one in the 3D view to edit it.</p>
+        </div>
+      )}
     </div>
   );
 };

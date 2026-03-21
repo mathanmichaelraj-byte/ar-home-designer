@@ -16,17 +16,27 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
   const { scene } = useGLTF(modelUrl);
   const clone = React.useMemo(() => scene.clone(), [scene]);
 
-  const handleTransform = useCallback(() => {
-    if (!groupRef.current) return;
-    const p = groupRef.current.position;
-    const r = groupRef.current.rotation;
-    const s = groupRef.current.scale;
-    onUpdate(index, {
-      position: { x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3) },
-      rotation: { x: +r.x.toFixed(3), y: +r.y.toFixed(3), z: +r.z.toFixed(3) },
-      scale:    { x: +s.x.toFixed(3), y: +s.y.toFixed(3), z: +s.z.toFixed(3) },
+  // Apply tint color to all meshes in the model
+  useEffect(() => {
+    if (!clone || !object.color || object.color === '#cccccc') return;
+    clone.traverse((child) => {
+      if (child.isMesh && child.material) {
+        const mat = child.material.clone();
+        mat.color.set(object.color);
+        child.material = mat;
+      }
     });
-  }, [index, onUpdate]);
+  }, [clone, object.color]);
+
+  const handleTransform = useCallback(() => {
+  if (!groupRef.current) return;
+  const p = groupRef.current.position;
+  const r = groupRef.current.rotation;
+  onUpdate(index, {
+    position: { x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3) },
+    rotation: { x: +r.x.toFixed(3), y: +r.y.toFixed(3), z: +r.z.toFixed(3) },
+  });
+}, [index, onUpdate]);
 
   return (
     <>
@@ -52,9 +62,14 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
         <TransformControls
           object={groupRef.current}
           mode="translate"
+          showX={true}
+          showY={true}
+          showZ={true}
           onMouseDown={() => { if (orbitRef.current) orbitRef.current.enabled = false; }}
-          onMouseUp={() => { if (orbitRef.current) orbitRef.current.enabled = true; }}
-          onChange={handleTransform}
+          onMouseUp={() => {
+            if (orbitRef.current) orbitRef.current.enabled = true;
+            handleTransform();
+          }}
         />
       )}
     </>
