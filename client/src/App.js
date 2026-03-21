@@ -1,7 +1,8 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
+import HouseDashboardPage from './pages/HouseDashboardPage';
+import HouseDesignerPage from './pages/HouseDesignerPage';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
@@ -30,6 +31,8 @@ function App() {
             <Route path="/designer/:id" element={<ProtectedRoute><DesignerPage /></ProtectedRoute>} />
             <Route path="/ar/:id" element={<ProtectedRoute><ARViewerPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+            <Route path="/houses" element={<ProtectedRoute><HouseDashboardPage /></ProtectedRoute>} />
+            <Route path="/houses/:id" element={<ProtectedRoute><HouseDesignerPage /></ProtectedRoute>} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

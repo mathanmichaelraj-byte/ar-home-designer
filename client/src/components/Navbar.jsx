@@ -25,6 +25,7 @@ const Navbar = () => {
           {user ? (
             <>
               <Link to="/dashboard" className={`text-sm font-medium transition-colors ${isActive('/dashboard') ? 'text-brand-500' : 'text-gray-400 hover:text-white'}`}>Dashboard</Link>
+              <Link to="/houses" className={`text-sm font-medium transition-colors ${isActive('/houses') ? 'text-brand-500' : 'text-gray-400 hover:text-white'}`}>Houses</Link>
               <Link to="/designer" className={`text-sm font-medium transition-colors ${isActive('/designer') ? 'text-brand-500' : 'text-gray-400 hover:text-white'}`}>Designer</Link>
               <Link to="/profile" className={`text-sm font-medium transition-colors ${isActive('/profile') ? 'text-brand-500' : 'text-gray-400 hover:text-white'}`}>{user.name}</Link>
               <button onClick={handleLogout} className="btn-ghost text-sm">Logout</button>
