@@ -34,7 +34,6 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
       if (!groupRef.current) return;
       const p = groupRef.current.position;
       const r = groupRef.current.rotation;
-      const s = groupRef.current.scale;
       onUpdate(index, {
         // Divide back to meters for storage
         position: { x: +(p.x / SCENE_SCALE).toFixed(3), y: +(p.y / SCENE_SCALE).toFixed(3), z: +(p.z / SCENE_SCALE).toFixed(3) },
