@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useHouse } from '../context/HouseContext';
 import SceneViewer from '../three/SceneViewer';
 import { furnitureAPI } from '../utils/api';
+import { useProject } from '../context/ProjectContext';
 
 const ROOM_TYPES = [
   { value: 'living',   label: 'Living Room', emoji: '🛋️' },
@@ -24,6 +25,7 @@ const HouseDesignerPage = () => {
   const [sidebarTab, setSidebarTab] = useState('furniture');
   const [showAddRoom, setShowAddRoom] = useState(false);
   const [houseName, setHouseName] = useState('');
+  const [showImportRoom, setShowImportRoom] = useState(false);
 
   useEffect(() => {
     if (id) loadHouse(id).finally(() => setLoading(false));
@@ -85,6 +87,64 @@ const HouseDesignerPage = () => {
     setSelectedObjIdx(null);
   }, [currentRoom, updateRoom]);
 
+  const handleImportRoom = async (project) => {
+    const roomData = {
+      name: project.name,
+      type: 'living',
+      dimensions: project.roomDimensions || { width: 5, length: 5, height: 2.8 },
+      wallColor: project.wallColor || '#f5f5f0',
+      objects: project.objects || [],
+    };
+
+    const ImportRoomModal = ({ onClose, onImport }) => {
+      const { projects, loadProjects } = useProject();
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        loadProjects().finally(() => setLoading(false));
+      }, [loadProjects]);
+
+      return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+          <div className="card w-full max-w-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-semibold">Import Room</h3>
+              <button onClick={onClose} className="text-gray-500 hover:text-white text-lg">✕</button>
+            </div>
+            <p className="text-gray-400 text-xs mb-4">Import an existing room project into this house.</p>
+            {loading ? (
+              <div className="flex justify-center py-6">
+                <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : projects.length === 0 ? (
+              <p className="text-gray-500 text-sm text-center py-6">No room projects found.</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {projects.filter(Boolean).map((project) => (
+                  <button key={project._id} onClick={() => onImport(project)}
+                    className="w-full card hover:border-brand-500 text-left flex items-center justify-between group">
+                    <div>
+                      <p className="text-white text-sm font-medium">{project.name}</p>
+                      <p className="text-gray-500 text-xs">
+                        {project.roomDimensions?.width || 5}m × {project.roomDimensions?.length || 5}m
+                        · {project.objects?.length || 0} items
+                      </p>
+                    </div>
+                    <span className="text-brand-500 text-xs opacity-0 group-hover:opacity-100">Import →</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <button onClick={onClose} className="btn-ghost w-full mt-4 text-sm">Cancel</button>
+          </div>
+        </div>
+      );
+    };
+    const updated = await addRoom(roomData);
+    setSelectedRoomIdx((updated.rooms?.length || 1) - 1);
+    setShowImportRoom(false);
+  };
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
@@ -126,8 +186,12 @@ const HouseDesignerPage = () => {
           <div className="border-b border-border">
             <div className="flex items-center justify-between px-3 py-2">
               <span className="text-xs font-medium text-gray-400">Rooms ({currentHouse.rooms?.length || 0})</span>
-              <button onClick={() => setShowAddRoom(true)}
-                className="text-xs text-brand-500 hover:text-brand-600 font-medium">+ Add</button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowImportRoom(true)}
+                  className="text-xs text-gray-400 hover:text-white">↑ Import</button>
+                <button onClick={() => setShowAddRoom(true)}
+                  className="text-xs text-brand-500 hover:text-brand-600 font-medium">+ Add</button>
+              </div>
             </div>
             <div className="max-h-40 overflow-y-auto">
               {(currentHouse.rooms || []).map((room, i) => (
@@ -208,12 +272,21 @@ const HouseDesignerPage = () => {
         <AddRoomModal
           onClose={() => setShowAddRoom(false)}
           onAdd={async (roomData) => {
-            await addRoom(roomData);
-            setSelectedRoomIdx((currentHouse.rooms?.length || 0));
+            const updated = await addRoom(roomData);
+            setSelectedRoomIdx((updated.rooms?.length || 1) - 1);
             setShowAddRoom(false);
           }}
         />
       )}
+
+      {/* Import Room Modal */}
+      {showImportRoom && (
+        <ImportRoomModal
+          onClose={() => setShowImportRoom(false)}
+          onImport={handleImportRoom}
+        />
+      )}
+      
     </div>
   );
 };
