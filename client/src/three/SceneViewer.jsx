@@ -7,7 +7,7 @@ class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
   static getDerivedStateFromError() { return { hasError: true }; }
   render() {
-    if (this.state.hasError) return null; // silently skip broken models
+    if (this.state.hasError) return null;
     return this.props.children;
   }
 }
@@ -36,9 +36,7 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
       if (!groupRef.current) return;
       const p = groupRef.current.position;
       const r = groupRef.current.rotation;
-      const s = groupRef.current.scale;
       onUpdate(index, {
-        // Divide back to meters for storage
         position: { x: +(p.x / SCENE_SCALE).toFixed(3), y: +(p.y / SCENE_SCALE).toFixed(3), z: +(p.z / SCENE_SCALE).toFixed(3) },
         rotation: { x: +r.x.toFixed(3), y: +r.y.toFixed(3), z: +r.z.toFixed(3) },
       });
@@ -48,7 +46,6 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
       <>
         <group
           ref={groupRef}
-          // Multiply stored meter positions by SCENE_SCALE for rendering
           position={[
             (object.position?.x || 0) * SCENE_SCALE,
             (object.position?.y || 0) * SCENE_SCALE,
@@ -58,7 +55,6 @@ const FurnitureModel = ({ object, index, isSelected, onSelect, orbitRef, onUpdat
           scale={[object.scale?.x||1, object.scale?.y||1, object.scale?.z||1]}
           onClick={(e) => { e.stopPropagation(); onSelect(index); }}
         >
-          {/* No inner 0.01 scale — models render at natural cm size */}
           <primitive object={clone} castShadow receiveShadow />
           {isSelected && (
             <mesh>
