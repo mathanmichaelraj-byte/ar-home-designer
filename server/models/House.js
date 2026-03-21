@@ -2,15 +2,15 @@ const mongoose = require('mongoose');
 
 const roomSchema = new mongoose.Schema({
   name: { type: String, default: 'Room' },
-  type: { type: String, enum: ['living', 'bedroom', 'office', 'dining', 'kitchen', 'bathroom', 'other'], default: 'living' },
+  type: { type: String, enum: ['living','bedroom','office','dining','kitchen','bathroom','other'], default: 'living' },
   dimensions: {
     width: { type: Number, default: 5 },
     length: { type: Number, default: 5 },
     height: { type: Number, default: 2.8 },
   },
-  position: {
-    x: { type: Number, default: 0 },
-    y: { type: Number, default: 0 },
+  position2D: {
+    x: { type: Number, default: 40 },
+    y: { type: Number, default: 40 },
   },
   wallColor: { type: String, default: '#f5f5f0' },
   floorTexture: { type: String, default: 'wood' },
