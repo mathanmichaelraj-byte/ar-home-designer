@@ -388,7 +388,7 @@ const RoomSettingsOverlay = ({ room, onSave }) => {
         setDim(room.dimensions || { width: 5, length: 5, height: 2.8 });
         setWallColor(room.wallColor || '#f5f5f0');
     }
-    }, [room]);
+    }, [room?._id, room?.dimensions, room?.wallColor]);
 
   return (
     <div className="absolute bottom-4 right-4">
