@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 
 const GRID_SIZE = 40; // pixels per meter
 const MIN_ROOM_SIZE = 2; // meters
@@ -28,7 +28,7 @@ const FloorPlan = ({ house, onSelectRoom, onUpdateRoom, selectedRoomIdx }) => {
   const [hoveredRoom, setHoveredRoom] = useState(null);
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
 
-  const rooms = house?.rooms || [];
+  const rooms = useMemo(() => house?.rooms || [], [house?.rooms]);
 
   // Resize canvas to container
   useEffect(() => {
