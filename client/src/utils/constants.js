@@ -19,21 +19,24 @@ export const DEFAULT_ROOM = {
 // Canvas config (pixels per meter for 2D view)
 export const PX_PER_METER = 60;
 
-// Three.js scene defaults
+// Three.js scene defaults — dark theme
 export const SCENE_DEFAULTS = {
-  ambientIntensity: 0.6,
-  directionalIntensity: 0.8,
-  backgroundColor: '#1A1A2E',
-  gridSize: 20,
-  gridDivisions: 20,
+  ambientIntensity:     0.5,
+  directionalIntensity: 0.9,
+  backgroundColor:      '#0d0d0d',
+  gridSize:             20,
+  gridDivisions:        20,
 };
 
-// Colour palette used in 3D/2D canvas
+// Colour palette used in 3D/2D canvas — dark theme
 export const COLORS = {
-  wall:    '#263447',
-  floor:   '#1F2B3E',
-  accent:  '#E94560',
-  grid:    '#ffffff11',
+  wall:    '#1a1a1a',
+  floor:   '#141414',
+  ceiling: '#111111',
+  accent:  '#e8d5b7',
+  grid:    '#ffffff08',
+  gridSection: '#ffffff14',
+  selectionBox: '#e8d5b7',
 };
 
 // Error messages
