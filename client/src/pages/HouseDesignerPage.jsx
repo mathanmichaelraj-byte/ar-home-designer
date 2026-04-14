@@ -468,7 +468,6 @@ export default function HouseDesignerPage() {
     </div>
   );
 
-  const isPlan = viewMode==='2d' || viewMode==='3d-plan';
 
   return (
     <div className="h-screen flex flex-col bg-gray-950 pt-16">
