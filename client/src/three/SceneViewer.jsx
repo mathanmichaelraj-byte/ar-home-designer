@@ -11,7 +11,7 @@ const ROOM = {
   gridCell:     '#d4cbbf',
   gridSection:  '#b0a898',
   selectionCol: '#e8d5b7',   // warm gold
-  bg:           '#e8e2da',   // warm grey ambient
+  bg:           '#2d2d2d',   // warm grey ambient
 };
 
 /* ── Room geometry ──────────────────────────────────────────────────── */
