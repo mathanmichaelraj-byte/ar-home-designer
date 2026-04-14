@@ -260,13 +260,13 @@ export default function SceneViewer({ project, selectedIdx, onSelect, onUpdateOb
                       bg-white/90 backdrop-blur-md border border-gray-200
                       shadow-[0_4px_20px_rgba(0,0,0,0.18)]">
         <MBtn active={mode==='translate'} onClick={()=>setMode('translate')} title="Move"   key2="W" icon="✥"/>
-        <div className="w-px h-5 bg-gray-200"/>
+        <div className="w-px h-5 bg-black-400"/>
         <MBtn active={mode==='rotate'}    onClick={()=>setMode('rotate')}    title="Rotate" key2="E" icon="↻"/>
-        <div className="w-px h-5 bg-gray-200"/>
+        <div className="w-px h-5 bg-black-400"/>
         <MBtn active={mode==='scale'}     onClick={()=>setMode('scale')}     title="Scale"  key2="R" icon="⤢"/>
         {selectedIdx!==null && (
           <>
-            <div className="w-px h-5 bg-gray-200 mx-0.5"/>
+            <div className="w-px h-5 bg-black-400 mx-0.5"/>
             <button
               onClick={() => onDeleteObject?.(selectedIdx)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium
