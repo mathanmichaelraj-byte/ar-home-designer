@@ -182,7 +182,11 @@ const MBtn = ({ active, onClick, title, key2, icon }) => (
     style={{all:'unset'}}
     className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg text-xs
                 font-medium transition-all duration-150 select-none cursor-pointer
-                ${active ? 'bg-white text-black' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
+                ${active 
+  ? 'bg-black-600 text-white' 
+  : 'text-gray-700 hover:bg-gray-100 hover:text-black'}
+transition-colors duration-150 rounded-md
+focus:outline-none focus:ring-2 focus:ring-black-400`}>
     <span className="text-base leading-none">{icon}</span>
     <span className="text-[10px] leading-none font-mono">{key2}</span>
   </button>
@@ -260,13 +264,13 @@ export default function SceneViewer({ project, selectedIdx, onSelect, onUpdateOb
                       bg-white/90 backdrop-blur-md border border-gray-200
                       shadow-[0_4px_20px_rgba(0,0,0,0.18)]">
         <MBtn active={mode==='translate'} onClick={()=>setMode('translate')} title="Move"   key2="W" icon="✥"/>
-        <div className="w-px h-5 bg-black-400"/>
+        <div className="w-px h-5 bg-gray-200"/>
         <MBtn active={mode==='rotate'}    onClick={()=>setMode('rotate')}    title="Rotate" key2="E" icon="↻"/>
-        <div className="w-px h-5 bg-black-400"/>
+        <div className="w-px h-5 bg-gray-200"/>
         <MBtn active={mode==='scale'}     onClick={()=>setMode('scale')}     title="Scale"  key2="R" icon="⤢"/>
         {selectedIdx!==null && (
           <>
-            <div className="w-px h-5 bg-black-400 mx-0.5"/>
+            <div className="w-px h-5 bg-gray-200 mx-0.5"/>
             <button
               onClick={() => onDeleteObject?.(selectedIdx)}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium
