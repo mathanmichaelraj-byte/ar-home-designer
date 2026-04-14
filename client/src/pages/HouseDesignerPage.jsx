@@ -1,68 +1,413 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHouse } from '../context/HouseContext';
 import { useProject } from '../context/ProjectContext';
 import SceneViewer from '../three/SceneViewer';
 import FloorPlan from '../components/FloorPlan';
+import FloorPlan3D from '../components/FloorPlan3D';
 import { furnitureAPI } from '../utils/api';
 
+/* ── Constants ──────────────────────────────────────────────────────── */
 const ROOM_TYPES = [
-  { value: 'living',   label: 'Living Room', emoji: '🛋️' },
-  { value: 'bedroom',  label: 'Bedroom',     emoji: '🛏️' },
-  { value: 'office',   label: 'Office',      emoji: '💼' },
-  { value: 'dining',   label: 'Dining Room', emoji: '🍽️' },
-  { value: 'kitchen',  label: 'Kitchen',     emoji: '🍳' },
-  { value: 'bathroom', label: 'Bathroom',    emoji: '🚿' },
-  { value: 'other',    label: 'Other',       emoji: '🏠' },
+  { value:'living',   label:'Living Room', emoji:'🛋️' },
+  { value:'bedroom',  label:'Bedroom',     emoji:'🛏️' },
+  { value:'office',   label:'Office',      emoji:'💼' },
+  { value:'dining',   label:'Dining Room', emoji:'🍽️' },
+  { value:'kitchen',  label:'Kitchen',     emoji:'🍳' },
+  { value:'bathroom', label:'Bathroom',    emoji:'🚿' },
+  { value:'other',    label:'Other',       emoji:'🏠' },
+];
+const FLOOR_OPTIONS = [
+  { v:1, l:'Ground Floor' },
+  { v:2, l:'1st Floor'    },
+  { v:3, l:'2nd Floor'    },
+  { v:4, l:'3rd Floor'    },
+];
+const VIEW_MODES = [
+  { id:'2d',      label:'2D Plan', icon:(
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+    </svg>) },
+  { id:'3d-plan', label:'3D House', icon:(
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>) },
+  { id:'3d-room', label:'Edit Room', icon:(
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+    </svg>) },
 ];
 
-const HouseDesignerPage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { currentHouse, loadHouse, saveHouse, saving, addRoom, updateRoom, deleteRoom } = useHouse();
+/* ── Icons ──────────────────────────────────────────────────────────── */
+const Ic = {
+  save:  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+  back:  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>,
+  plus:  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  trash: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>,
+  edit:  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+  close: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  import:<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+  ar:    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 3H3v2M19 3h2v2M5 21H3v-2M19 21h2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>,
+};
+
+/* ── House Furniture Panel ──────────────────────────────────────────── */
+const FCATS = ['all','sofa','chair','table','bed','shelf','desk','lamp','cabinet','plant'];
+function HouseFurniturePanel({ onAdd }) {
+  const [furniture, setFurniture] = useState([]);
+  const [cat, setCat] = useState('all');
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [selectedRoomIdx, setSelectedRoomIdx] = useState(null);
-  const [selectedObjIdx, setSelectedObjIdx] = useState(null);
-  const [sidebarTab, setSidebarTab] = useState('furniture');
-  const [showAddRoom, setShowAddRoom] = useState(false);
-  const [showImportRoom, setShowImportRoom] = useState(false);
-  const [houseName, setHouseName] = useState('');
-  const [viewMode, setViewMode] = useState('floorplan'); // 'floorplan' | '3d'
 
   useEffect(() => {
-    if (id) loadHouse(id).finally(() => setLoading(false));
+    setLoading(true);
+    const p = {};
+    if (cat!=='all') p.type=cat;
+    if (search) p.search=search;
+    const t = setTimeout(() => {
+      furnitureAPI.list(p)
+        .then(({data})=>setFurniture(Array.isArray(data.furniture)?data.furniture:[]))
+        .catch(console.error)
+        .finally(()=>setLoading(false));
+    }, 280);
+    return ()=>clearTimeout(t);
+  }, [cat, search]);
+
+  return (
+    <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="p-3 border-b border-gray-800 shrink-0">
+        <input className="w-full bg-gray-900 border border-gray-800 rounded-xl px-3 py-2
+                          text-white text-xs placeholder-gray-700 focus:outline-none
+                          focus:border-gray-600 transition-colors"
+          placeholder="Search furniture…" value={search} onChange={e=>setSearch(e.target.value)}/>
+      </div>
+      <div className="flex gap-1.5 px-3 py-2 overflow-x-auto border-b border-gray-800 shrink-0
+                      [&::-webkit-scrollbar]:hidden">
+        {FCATS.map(c=>(
+          <button key={c} onClick={()=>setCat(c)}
+            className={`px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap
+                        shrink-0 transition-all ${c===cat?'bg-white text-black':'bg-gray-900 border border-gray-800 text-gray-500 hover:text-white'}`}>
+            {c.charAt(0).toUpperCase()+c.slice(1)}
+          </button>
+        ))}
+      </div>
+      <div className="flex-1 overflow-y-auto p-3">
+        {loading ? (
+          <div className="grid grid-cols-2 gap-2">
+            {Array.from({length:4}).map((_,i)=><div key={i} className="aspect-square rounded-xl bg-gray-900 animate-pulse"/>)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {furniture.map(item=>(
+              <button key={item._id} onClick={()=>onAdd(item)}
+                className="group bg-gray-900 border border-gray-800 rounded-xl p-2.5
+                           hover:border-gray-600 transition-all text-left active:scale-[0.97]">
+                <div className="aspect-square bg-gray-850 rounded-lg mb-2 flex items-center
+                                justify-center overflow-hidden border border-gray-800">
+                  {item.thumbnailUrl
+                    ? <img src={item.thumbnailUrl} alt={item.name} className="w-full h-full object-cover"/>
+                    : <span className="text-2xl">🪑</span>}
+                </div>
+                <p className="text-white text-[11px] font-medium truncate">{item.name}</p>
+                {item.price!=null && <p className="text-gray-600 text-[10px] font-mono">${item.price}</p>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Room Settings overlay (inside 3D Room view) ───────────────────── */
+function RoomSettingsOverlay({ room, onSave }) {
+  const [open, setOpen] = useState(false);
+  const [dim, setDim] = useState(room?.dimensions||{width:5,length:5,height:2.8});
+  const [wc,  setWc]  = useState(room?.wallColor||'#f0ebe3');
+
+  useEffect(()=>{
+    if (room) { setDim(room.dimensions||{width:5,length:5,height:2.8}); setWc(room.wallColor||'#f0ebe3'); }
+  }, [room]);
+
+  return (
+    <div className="absolute bottom-16 right-4 z-20">
+      <button onClick={()=>setOpen(!open)}
+        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border
+                    transition-all ${open?'bg-white text-black border-white':'bg-black/50 backdrop-blur-sm border-gray-700 text-gray-400 hover:text-white hover:border-gray-600'}`}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        Room
+      </button>
+      {open && (
+        <div className="absolute bottom-10 right-0 w-56 bg-gray-900 border border-gray-700
+                        rounded-2xl shadow-card p-4 animate-slide-down space-y-3 z-50">
+          <p className="text-white text-xs font-semibold">Room Settings</p>
+          {[['Width (m)','width'],['Length (m)','length'],['Height (m)','height']].map(([l,k])=>(
+            <div key={k} className="flex items-center justify-between gap-2">
+              <label className="text-xs text-gray-500">{l}</label>
+              <input type="number" step="0.5" min="1" max="30"
+                className="w-20 bg-gray-950 border border-gray-800 rounded-lg px-2 py-1.5
+                           text-white text-xs font-mono focus:outline-none focus:border-gray-600"
+                value={dim[k]??5}
+                onChange={e=>setDim(prev=>({...prev,[k]:e.target.value}))}
+                onBlur={e=>{const v={...dim,[k]:parseFloat(e.target.value)||1};setDim(v);onSave({dimensions:v});}}/>
+            </div>
+          ))}
+          <div>
+            <label className="text-xs text-gray-500 block mb-1.5">Wall Color</label>
+            <div className="flex items-center gap-2">
+              <input type="color" value={wc}
+                onChange={e=>{setWc(e.target.value);onSave({wallColor:e.target.value});}}
+                className="w-9 h-9 rounded-lg cursor-pointer border border-gray-700 bg-gray-950 p-0.5"/>
+              <span className="text-xs font-mono text-gray-600">{wc}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Add Room Modal ─────────────────────────────────────────────────── */
+function AddRoomModal({ onClose, onAdd }) {
+  const [form, setForm] = useState({
+    name:'', type:'living', floor:1,
+    dimensions:{ width:4, length:4, height:2.8 },
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-2xl
+                      shadow-card animate-scale-in">
+        <div className="flex items-center justify-between p-5 border-b border-gray-800">
+          <div>
+            <h3 className="text-white font-semibold text-sm">Add Room</h3>
+            <p className="text-gray-600 text-xs mt-0.5">Configure the new room</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-gray-800 flex items-center
+                  justify-center text-gray-500 hover:text-white transition-colors">
+            {Ic.close}
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Name */}
+          <div>
+            <label className="label">Room name</label>
+            <input className="input" placeholder="e.g. Master Bedroom"
+              value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>
+          </div>
+
+          {/* Room type */}
+          <div>
+            <label className="label">Room type</label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {ROOM_TYPES.map(({value,label,emoji})=>(
+                <button key={value} onClick={()=>setForm({...form,type:value})}
+                  className={`flex flex-col items-center gap-1 py-2.5 rounded-xl border
+                              text-xs transition-all ${form.type===value
+                              ?'border-white bg-white/10 text-white'
+                              :'border-gray-800 text-gray-600 hover:border-gray-600 hover:text-gray-300'}`}>
+                  <span className="text-lg">{emoji}</span>
+                  <span className="text-[10px] leading-tight text-center">{label.split(' ')[0]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Floor */}
+          <div>
+            <label className="label">Floor level</label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {FLOOR_OPTIONS.map(({v,l})=>(
+                <button key={v} onClick={()=>setForm({...form,floor:v})}
+                  className={`py-2 rounded-xl border text-xs font-mono transition-all
+                    ${form.floor===v?'border-white bg-white/10 text-white':'border-gray-800 text-gray-600 hover:border-gray-600'}`}>
+                  F{v}
+                </button>
+              ))}
+            </div>
+            <p className="text-gray-700 text-[10px] mt-1">
+              {FLOOR_OPTIONS.find(f=>f.v===form.floor)?.l}
+            </p>
+          </div>
+
+          {/* Dimensions */}
+          <div>
+            <label className="label">Dimensions (metres)</label>
+            <div className="grid grid-cols-3 gap-2">
+              {[['W','width'],['L','length'],['H','height']].map(([l,k])=>(
+                <div key={k}>
+                  <label className="text-[10px] text-gray-700 font-mono uppercase block mb-1">{l}</label>
+                  <input type="number" step="0.5" min="1" max="30"
+                    className="w-full bg-gray-950 border border-gray-800 rounded-lg px-2 py-1.5
+                               text-white text-xs font-mono focus:outline-none focus:border-gray-600"
+                    value={form.dimensions[k]}
+                    onChange={e=>setForm({...form,dimensions:{...form.dimensions,[k]:parseFloat(e.target.value)||1}})}/>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2 p-5 pt-0">
+          <button onClick={onClose} className="btn-ghost flex-1 text-sm">Cancel</button>
+          <button onClick={()=>{if(!form.name.trim())return;onAdd(form);}}
+            disabled={!form.name.trim()}
+            className="btn-primary flex-1 text-sm">
+            Add Room
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Import Room Modal ──────────────────────────────────────────────── */
+function ImportRoomModal({ onClose, onImport }) {
+  const { projects, loadProjects } = useProject();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(()=>{ loadProjects().finally(()=>setLoading(false)); }, [loadProjects]);
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-2xl shadow-card animate-scale-in">
+        <div className="flex items-center justify-between p-5 border-b border-gray-800">
+          <h3 className="text-white font-semibold text-sm">Import Room</h3>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-gray-800 flex items-center justify-center text-gray-500 hover:text-white">
+            {Ic.close}
+          </button>
+        </div>
+        <div className="p-5">
+          <p className="text-gray-600 text-xs mb-4">Import an existing room project into this house.</p>
+          {loading ? (
+            <div className="flex justify-center py-8"><div className="spinner"/></div>
+          ) : projects.length===0 ? (
+            <p className="text-gray-600 text-sm text-center py-8">No room projects found.</p>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {projects.filter(Boolean).map(p=>(
+                <button key={p._id} onClick={()=>onImport(p)}
+                  className="w-full bg-gray-850 border border-gray-800 rounded-xl px-4 py-3
+                             hover:border-gray-600 transition-all text-left group flex items-center justify-between">
+                  <div>
+                    <p className="text-white text-sm font-medium">{p.name}</p>
+                    <p className="text-gray-600 text-xs">
+                      {p.roomDimensions?.width||5}m × {p.roomDimensions?.length||5}m · {p.objects?.length||0} items
+                    </p>
+                  </div>
+                  <span className="text-gray-600 group-hover:text-white text-xs transition-colors">{Ic.import}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="px-5 pb-5">
+          <button onClick={onClose} className="btn-ghost w-full text-sm">Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── House stats sidebar (shown in plan views) ──────────────────────── */
+function HouseStats({ house, selectedRoom, onEnter3D }) {
+  const rooms = house?.rooms||[];
+  const totalArea = rooms.reduce((s,r)=>s+(r.dimensions?.width||0)*(r.dimensions?.length||0),0);
+  const totalItems= rooms.reduce((s,r)=>s+(r.objects?.length||0),0);
+  const floors    = [...new Set(rooms.map(r=>r.floor||1))].sort((a,b)=>a-b);
+
+  return (
+    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider">House overview</p>
+
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          ['Rooms',     rooms.length],
+          ['Area',      `${totalArea.toFixed(0)} m²`],
+          ['Furniture', totalItems],
+          ['Floors',    floors.length],
+        ].map(([l,v])=>(
+          <div key={l} className="bg-gray-900 border border-gray-800 rounded-xl px-3 py-3">
+            <p className="text-gray-600 text-[10px] mb-1">{l}</p>
+            <p className="text-white font-semibold text-sm">{v}</p>
+          </div>
+        ))}
+      </div>
+
+      {selectedRoom && (
+        <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 space-y-3">
+          <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider">Selected room</p>
+          <p className="text-white font-semibold text-sm">{selectedRoom.name}</p>
+          <p className="text-gray-500 text-xs">
+            {selectedRoom.dimensions?.width}×{selectedRoom.dimensions?.length} m
+            · {selectedRoom.objects?.length||0} items
+            · {FLOOR_OPTIONS.find(f=>f.v===(selectedRoom.floor||1))?.l}
+          </p>
+          <button onClick={onEnter3D}
+            className="btn-primary w-full text-xs py-2">
+            Edit in 3D →
+          </button>
+        </div>
+      )}
+
+      <p className="text-gray-800 text-[10px] leading-relaxed">
+        Drag rooms to reposition · Double-click to edit in 3D
+      </p>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Main HouseDesignerPage
+══════════════════════════════════════════════════════════════════════ */
+export default function HouseDesignerPage() {
+  const { id }   = useParams();
+  const navigate = useNavigate();
+  const { currentHouse, loadHouse, saveHouse, saving, addRoom, updateRoom, deleteRoom } = useHouse();
+
+  const [loading,       setLoading]       = useState(true);
+  const [selRoomIdx,    setSelRoomIdx]    = useState(null);
+  const [selObjIdx,     setSelObjIdx]     = useState(null);
+  const [sidebarTab,    setSidebarTab]    = useState('furniture');
+  const [viewMode,      setViewMode]      = useState('2d');
+  const [houseName,     setHouseName]     = useState('');
+  const [showAddRoom,   setShowAddRoom]   = useState(false);
+  const [showImport,    setShowImport]    = useState(false);
+
+  useEffect(()=>{
+    if (id) loadHouse(id).finally(()=>setLoading(false));
     else setLoading(false);
   }, [id, loadHouse]);
 
-  useEffect(() => {
+  useEffect(()=>{
     if (currentHouse?.name) setHouseName(currentHouse.name);
   }, [currentHouse?._id, currentHouse?.name]);
 
-  const currentRoom = selectedRoomIdx !== null ? currentHouse?.rooms?.[selectedRoomIdx] : null;
+  const currentRoom = selRoomIdx!==null ? currentHouse?.rooms?.[selRoomIdx] : null;
 
-  const roomAsProject = currentRoom ? {
+  const roomAsProject = useMemo(() => currentRoom ? {
     _id: currentRoom._id,
     roomDimensions: currentRoom.dimensions,
     wallColor: currentRoom.wallColor,
-    objects: currentRoom.objects || [],
-  } : null;
+    objects: currentRoom.objects||[],
+  } : null, [currentRoom]);
 
   const handleSave = useCallback(async () => {
-    await saveHouse({ name: houseName });
+    await saveHouse({ name:houseName });
   }, [saveHouse, houseName]);
 
-  const handleSaveAndBack = async () => {
-    await saveHouse({ name: houseName });
+  const handleBack = async () => {
+    await saveHouse({ name:houseName });
     navigate('/houses');
   };
 
-  // Called from FloorPlan — single click selects, double click enters 3D
-  const handleSelectRoom = useCallback((idx, enterDesigner = false) => {
-    setSelectedRoomIdx(idx);
-    setSelectedObjIdx(null);
-    if (enterDesigner && idx !== null) {
-      setViewMode('3d');
-    }
+  // FloorPlan / FloorPlan3D select callback
+  const handleSelectRoom = useCallback((idx, enterDesigner=false) => {
+    setSelRoomIdx(idx);
+    setSelObjIdx(null);
+    if (enterDesigner && idx!==null) setViewMode('3d-room');
   }, []);
 
   const handleUpdateRoomById = useCallback(async (roomId, updates) => {
@@ -71,578 +416,377 @@ const HouseDesignerPage = () => {
 
   const handleUpdateObject = useCallback(async (index, updates) => {
     if (!currentRoom) return;
-    const objects = [...(currentRoom.objects || [])];
+    const objects = [...(currentRoom.objects||[])];
     objects[index] = { ...objects[index], ...updates };
     await updateRoom(currentRoom._id, { objects });
   }, [currentRoom, updateRoom]);
 
-  const handleAddObject = useCallback(async (furnitureItem) => {
+  const handleDeleteObject = useCallback(async (index) => {
     if (!currentRoom) return;
-    const CEILING_KEYWORDS = ['ceiling', 'fan', 'chandelier'];
-    const isCeiling = CEILING_KEYWORDS.some(k => furnitureItem.name.toLowerCase().includes(k));
-    const newObj = {
-      furnitureId: furnitureItem._id,
-      name: furnitureItem.name,
-      modelUrl: furnitureItem.modelUrl,
-      position: { x: 0, y: isCeiling ? 2.6 : 0, z: 0 },
-      rotation: { x: 0, y: 0, z: 0 },
-      scale: { x: 1, y: 1, z: 1 },
-      color: '#cccccc',
-    };
-    await updateRoom(currentRoom._id, { objects: [...(currentRoom.objects || []), newObj] });
+    const objects = currentRoom.objects.filter((_,i)=>i!==index);
+    await updateRoom(currentRoom._id, { objects });
+    setSelObjIdx(null);
   }, [currentRoom, updateRoom]);
 
-  const handleRemoveObject = useCallback(async (index) => {
+  const handleAddObject = useCallback(async (item) => {
     if (!currentRoom) return;
-    const objects = currentRoom.objects.filter((_, i) => i !== index);
-    await updateRoom(currentRoom._id, { objects });
-    setSelectedObjIdx(null);
+    const isCeil = ['ceiling','fan','chandelier'].some(k=>item.name.toLowerCase().includes(k));
+    const newObj = {
+      furnitureId: item._id,
+      name:        item.name,
+      modelUrl:    item.modelUrl,
+      position:    { x:0, y:isCeil?2.5:0, z:0 },
+      rotation:    { x:0, y:0, z:0 },
+      scale:       { x:1, y:1, z:1 },
+      color:       '#cccccc',
+    };
+    await updateRoom(currentRoom._id, { objects:[...(currentRoom.objects||[]), newObj] });
   }, [currentRoom, updateRoom]);
 
   const handleImportRoom = async (project) => {
-    const roomData = {
-      name: project.name,
-      type: 'living',
-      dimensions: project.roomDimensions || { width: 5, length: 5, height: 2.8 },
-      wallColor: project.wallColor || '#f5f5f0',
-      objects: project.objects || [],
-    };
-    const updated = await addRoom(roomData);
-    setSelectedRoomIdx((updated.rooms?.length || 1) - 1);
-    setShowImportRoom(false);
+    const updated = await addRoom({
+      name: project.name, type:'living',
+      floor: 1,
+      dimensions: project.roomDimensions||{width:5,length:5,height:2.8},
+      wallColor: project.wallColor||'#f0ebe3',
+      objects: project.objects||[],
+    });
+    setSelRoomIdx((updated.rooms?.length||1)-1);
+    setShowImport(false);
   };
 
+  /* ── guards ─────────────────────────────────────────────────────── */
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="spinner-lg"/>
+    </div>
+  );
+  if (!currentHouse) return (
+    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4">
+      <p className="text-gray-500">House not found.</p>
+      <button onClick={()=>navigate('/houses')} className="btn-ghost text-sm">← Back</button>
     </div>
   );
 
-  if (!currentHouse) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-gray-400">House not found.</p>
-    </div>
-  );
+  const isPlan = viewMode==='2d' || viewMode==='3d-plan';
 
   return (
-    <div className="h-screen flex flex-col bg-surface pt-16">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 h-12 border-b border-border bg-panel shrink-0">
+    <div className="h-screen flex flex-col bg-gray-950 pt-16">
+
+      {/* ── Modals ──────────────────────────────────────────── */}
+      {showAddRoom && (
+        <AddRoomModal onClose={()=>setShowAddRoom(false)}
+          onAdd={async (data)=>{
+            const updated = await addRoom(data);
+            setSelRoomIdx((updated.rooms?.length||1)-1);
+            setShowAddRoom(false);
+          }}/>
+      )}
+      {showImport && (
+        <ImportRoomModal onClose={()=>setShowImport(false)} onImport={handleImportRoom}/>
+      )}
+
+      {/* ── Toolbar ─────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-4 h-11 border-b border-gray-800 bg-gray-950 shrink-0">
+
+        {/* Left */}
         <div className="flex items-center gap-3">
-          <input
-            className="bg-transparent text-white font-medium text-sm focus:outline-none border-b border-transparent focus:border-brand-500 transition-colors w-40"
-            value={houseName}
-            onChange={(e) => setHouseName(e.target.value)}
-            placeholder="My House"
-          />
+          <button onClick={handleBack}
+            className="text-gray-600 hover:text-white transition-colors p-1">{Ic.back}</button>
+          <div className="w-px h-4 bg-gray-800"/>
+          <input className="bg-transparent text-white text-sm font-medium focus:outline-none
+                            border-b border-transparent focus:border-gray-600 transition-colors
+                            placeholder-gray-700 w-36"
+            value={houseName} onChange={e=>setHouseName(e.target.value)} placeholder="My House"/>
           <button onClick={handleSave} disabled={saving}
-            className={`text-xs px-3 py-1 rounded-lg transition-all ${saving ? 'bg-yellow-500/10 text-yellow-400' : 'bg-brand-500/10 hover:bg-brand-500/20 text-brand-500 border border-brand-500/30'}`}>
-            {saving ? 'Saving…' : '💾 Save'}
+            className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border
+                       border-gray-800 text-gray-500 hover:border-gray-600 hover:text-white
+                       transition-all disabled:opacity-40">
+            {Ic.save} {saving?'Saving…':'Save'}
           </button>
         </div>
 
-        {/* View mode toggle */}
-        <div className="flex items-center gap-1 bg-surface rounded-lg p-1 border border-border">
-          <button
-            onClick={() => setViewMode('floorplan')}
-            className={`text-xs px-3 py-1 rounded-md transition-all ${viewMode === 'floorplan' ? 'bg-brand-500 text-white' : 'text-gray-400 hover:text-white'}`}>
-            🗺️ Floor Plan
-          </button>
-          <button
-            onClick={() => { if (currentRoom) setViewMode('3d'); }}
-            disabled={!currentRoom}
-            className={`text-xs px-3 py-1 rounded-md transition-all ${viewMode === '3d' ? 'bg-brand-500 text-white' : currentRoom ? 'text-gray-400 hover:text-white' : 'text-gray-600 cursor-not-allowed'}`}>
-            🧊 3D Room
-          </button>
+        {/* View mode switcher */}
+        <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1">
+          {VIEW_MODES.map(m=>(
+            <button key={m.id}
+              onClick={()=>{ if(m.id==='3d-room' && !currentRoom) return; setViewMode(m.id); }}
+              disabled={m.id==='3d-room' && !currentRoom}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
+                          transition-all ${viewMode===m.id?'bg-white text-black':
+                          m.id==='3d-room'&&!currentRoom?'text-gray-800 cursor-not-allowed':
+                          'text-gray-500 hover:text-white'}`}>
+              {m.icon} {m.label}
+            </button>
+          ))}
         </div>
 
-        <button onClick={handleSaveAndBack} className="btn-ghost text-xs px-3 py-1.5">
-          ← Back
-        </button>
+        {/* Right */}
+        <div className="flex items-center gap-2">
+          {viewMode==='3d-room' && currentRoom && (
+            <button onClick={()=>navigate(`/ar/${currentRoom._id}`)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg
+                         bg-white text-black font-medium hover:bg-gray-100 transition-all">
+              {Ic.ar} View AR
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* ── Main ────────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar */}
-        <div className="w-64 border-r border-border flex flex-col bg-panel shrink-0">
+
+        {/* ── Sidebar ─────────────────────────────────────── */}
+        <div className="w-60 border-r border-gray-800 flex flex-col bg-gray-950 shrink-0">
+
+          {/* Rooms list header */}
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 shrink-0">
+            <span className="text-[10px] text-gray-600 font-mono uppercase tracking-wider">
+              Rooms ({currentHouse.rooms?.length||0})
+            </span>
+            <div className="flex gap-1">
+              <button onClick={()=>setShowImport(true)}
+                className="text-gray-600 hover:text-white transition-colors p-1"
+                title="Import room">{Ic.import}</button>
+              <button onClick={()=>setShowAddRoom(true)}
+                className="flex items-center gap-1 text-[11px] bg-white text-black
+                           px-2 py-1 rounded-lg font-medium hover:bg-gray-100 transition-all">
+                {Ic.plus} Add
+              </button>
+            </div>
+          </div>
 
           {/* Rooms list */}
-          <div className="border-b border-border">
-            <div className="flex items-center justify-between px-3 py-2">
-              <span className="text-xs font-medium text-gray-400">
-                Rooms ({currentHouse.rooms?.length || 0})
-              </span>
-              <div className="flex gap-2">
-                <button onClick={() => setShowImportRoom(true)}
-                  className="text-xs text-gray-400 hover:text-white">↑ Import</button>
-                <button onClick={() => setShowAddRoom(true)}
-                  className="text-xs text-brand-500 hover:text-brand-600 font-medium">+ Add</button>
-              </div>
-            </div>
-            <div className="max-h-48 overflow-y-auto">
-              {(currentHouse.rooms || []).map((room, i) => (
-                <div key={room._id || i}
-                  onClick={() => handleSelectRoom(i)}
-                  onDoubleClick={() => handleSelectRoom(i, true)}
-                  className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors ${
-                    selectedRoomIdx === i
-                      ? 'bg-brand-500/10 border-l-2 border-brand-500'
-                      : 'hover:bg-surface border-l-2 border-transparent'
-                  }`}>
-                  <div className="flex items-center gap-2 overflow-hidden">
-                    <span className="text-sm">{ROOM_TYPES.find(r => r.value === room.type)?.emoji || '🏠'}</span>
+          <div className="max-h-52 overflow-y-auto border-b border-gray-800 shrink-0">
+            {(currentHouse.rooms||[]).length===0 ? (
+              <p className="text-gray-700 text-xs px-4 py-4">No rooms yet. Add one above.</p>
+            ) : (
+              (currentHouse.rooms||[]).map((room,i)=>(
+                <div key={room._id||i}
+                  onClick={()=>handleSelectRoom(i)}
+                  onDoubleClick={()=>handleSelectRoom(i,true)}
+                  className={`flex items-center justify-between px-4 py-2.5 cursor-pointer
+                              transition-colors border-l-2 group
+                              ${selRoomIdx===i
+                                ?'bg-white/[0.04] border-l-white/40'
+                                :'border-l-transparent hover:bg-white/[0.02]'}`}>
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <span className="text-base leading-none shrink-0">
+                      {ROOM_TYPES.find(r=>r.value===room.type)?.emoji||'🏠'}
+                    </span>
                     <div className="overflow-hidden">
-                      <p className="text-xs text-white truncate">{room.name}</p>
-                      <p className="text-xs text-gray-600">{room.dimensions?.width}×{room.dimensions?.length}m</p>
+                      <p className={`text-xs truncate ${selRoomIdx===i?'text-white':'text-gray-400'}`}>
+                        {room.name}
+                      </p>
+                      <p className="text-[10px] text-gray-700 font-mono">
+                        {room.dimensions?.width}×{room.dimensions?.length}m · F{room.floor||1}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleSelectRoom(i, true); }}
-                      className="text-gray-500 hover:text-brand-500 text-xs px-1">✏️</button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); if (window.confirm(`Delete "${room.name}"?`)) deleteRoom(room._id); }}
-                      className="text-gray-600 hover:text-red-400 text-xs">✕</button>
+
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <button onClick={e=>{e.stopPropagation();handleSelectRoom(i,true);}}
+                      className="w-6 h-6 rounded-md bg-gray-800 flex items-center justify-center
+                                 text-gray-500 hover:text-white transition-colors"
+                      title="Edit in 3D">{Ic.edit}</button>
+                    <button onClick={e=>{e.stopPropagation();if(window.confirm(`Delete "${room.name}"?`))deleteRoom(room._id);}}
+                      className="w-6 h-6 rounded-md bg-gray-800 flex items-center justify-center
+                                 text-gray-500 hover:text-red-400 transition-colors"
+                      title="Delete room">{Ic.trash}</button>
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            )}
           </div>
 
-          {/* 3D mode sidebar — furniture + properties */}
-          {viewMode === '3d' && currentRoom && (
+          {/* Lower sidebar content */}
+          {viewMode==='3d-room' && currentRoom ? (
             <>
-              <div className="flex border-b border-border">
-                {['furniture', 'properties'].map((tab) => (
-                  <button key={tab} onClick={() => setSidebarTab(tab)}
-                    className={`flex-1 py-2 text-xs font-medium capitalize transition-colors ${
-                      sidebarTab === tab ? 'text-brand-500 border-b-2 border-brand-500' : 'text-gray-400 hover:text-white'
-                    }`}>{tab}</button>
+              <div className="flex border-b border-gray-800 shrink-0">
+                {['furniture','properties'].map(tab=>(
+                  <button key={tab} onClick={()=>setSidebarTab(tab)}
+                    className={`flex-1 py-2.5 text-xs font-medium capitalize transition-colors
+                                ${sidebarTab===tab?'text-white border-b border-white':'text-gray-700 hover:text-gray-400'}`}>
+                    {tab}
+                    {tab==='properties'&&selObjIdx!==null&&(
+                      <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"/>
+                    )}
+                  </button>
                 ))}
               </div>
-              {sidebarTab === 'furniture'
-                ? <HouseFurniturePanel onAdd={handleAddObject} />
-                : <HousePropertiesPanel
-                    objects={currentRoom?.objects || []}
-                    selectedIndex={selectedObjIdx}
-                    onSelect={(idx) => { setSelectedObjIdx(idx); setSidebarTab('properties'); }}
+              {sidebarTab==='furniture'
+                ? <HouseFurniturePanel onAdd={handleAddObject}/>
+                : <PropertiesPanel
+                    objects={currentRoom?.objects||[]}
+                    selectedIndex={selObjIdx}
+                    onSelect={idx=>{setSelObjIdx(idx);setSidebarTab('properties');}}
                     onUpdate={handleUpdateObject}
-                    onRemove={handleRemoveObject}
-                    onDeselect={() => setSelectedObjIdx(null)}
-                  />
+                    onRemove={handleDeleteObject}
+                    onDeselect={()=>setSelObjIdx(null)}/>
               }
             </>
-          )}
-
-          {/* Floor plan mode — show house stats */}
-          {viewMode === 'floorplan' && (
-            <div className="flex-1 p-4 space-y-3">
-              <p className="text-xs text-gray-400 font-medium">House Stats</p>
-              <div className="space-y-2">
-                <div className="card py-2 px-3">
-                  <p className="text-xs text-gray-500">Total Rooms</p>
-                  <p className="text-white font-medium">{currentHouse.rooms?.length || 0}</p>
-                </div>
-                <div className="card py-2 px-3">
-                  <p className="text-xs text-gray-500">Total Area</p>
-                  <p className="text-white font-medium">
-                    {(currentHouse.rooms || []).reduce((sum, r) =>
-                      sum + (r.dimensions?.width || 0) * (r.dimensions?.length || 0), 0
-                    ).toFixed(1)} m²
-                  </p>
-                </div>
-                <div className="card py-2 px-3">
-                  <p className="text-xs text-gray-500">Total Furniture</p>
-                  <p className="text-white font-medium">
-                    {(currentHouse.rooms || []).reduce((sum, r) => sum + (r.objects?.length || 0), 0)} items
-                  </p>
-                </div>
-              </div>
-              {selectedRoomIdx !== null && currentRoom && (
-                <div className="mt-4">
-                  <p className="text-xs text-gray-400 font-medium mb-2">Selected Room</p>
-                  <div className="card py-2 px-3 border-brand-500/40">
-                    <p className="text-white text-sm font-medium">{currentRoom.name}</p>
-                    <p className="text-gray-500 text-xs">
-                      {currentRoom.dimensions?.width}×{currentRoom.dimensions?.length}m
-                      · {currentRoom.objects?.length || 0} items
-                    </p>
-                    <button
-                      onClick={() => setViewMode('3d')}
-                      className="btn-primary text-xs w-full mt-2 py-1">
-                      Edit in 3D →
-                    </button>
-                  </div>
-                </div>
-              )}
-              <p className="text-xs text-gray-600 mt-4">
-                Drag rooms to position them. Double-click to edit in 3D.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Main viewport */}
-        <div className="flex-1 relative overflow-hidden">
-          {viewMode === 'floorplan' ? (
-            <FloorPlan
-              house={currentHouse}
-              selectedRoomIdx={selectedRoomIdx}
-              onSelectRoom={handleSelectRoom}
-              onUpdateRoom={handleUpdateRoomById}
-            />
-          ) : roomAsProject ? (
-            <>
-              <SceneViewer
-                project={roomAsProject}
-                selectedIdx={selectedObjIdx}
-                onSelect={(idx) => { setSelectedObjIdx(idx); if (idx !== null) setSidebarTab('properties'); }}
-                onUpdateObject={handleUpdateObject}
-              />
-              {/* Back to floor plan */}
-              <button
-                onClick={() => setViewMode('floorplan')}
-                className="absolute top-3 left-3 bg-black/50 backdrop-blur text-white text-xs px-3 py-1.5 rounded-full hover:bg-black/70 transition-colors">
-                ← Floor Plan
-              </button>
-              {/* Room indicator */}
-              <div className="absolute top-3 right-4 bg-black/50 backdrop-blur text-white text-xs px-3 py-1 rounded-full">
-                {ROOM_TYPES.find(r => r.value === currentRoom?.type)?.emoji} {currentRoom?.name}
-              </div>
-              {currentRoom && (
-                <RoomSettingsOverlay
-                  room={currentRoom}
-                  onSave={(updates) => updateRoom(currentRoom._id, updates)}
-                />
-              )}
-            </>
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <p className="text-gray-500">Select a room and click Edit in 3D</p>
+            <HouseStats house={currentHouse}
+              selectedRoom={currentRoom}
+              onEnter3D={()=>{ if(currentRoom) setViewMode('3d-room'); }}/>
+          )}
+        </div>
+
+        {/* ── Viewport ────────────────────────────────────── */}
+        <div className="flex-1 relative overflow-hidden">
+
+          {viewMode==='2d' && (
+            <FloorPlan house={currentHouse} selectedRoomIdx={selRoomIdx}
+              onSelectRoom={handleSelectRoom} onUpdateRoom={handleUpdateRoomById}/>
+          )}
+
+          {viewMode==='3d-plan' && (
+            <FloorPlan3D house={currentHouse} selectedRoomIdx={selRoomIdx}
+              onSelectRoom={handleSelectRoom}/>
+          )}
+
+          {viewMode==='3d-room' && roomAsProject && (
+            <>
+              <SceneViewer project={roomAsProject} selectedIdx={selObjIdx}
+                onSelect={idx=>{setSelObjIdx(idx);if(idx!==null)setSidebarTab('properties');}}
+                onUpdateObject={handleUpdateObject}
+                onDeleteObject={handleDeleteObject}/>
+
+              {/* Back pill */}
+              <button onClick={()=>setViewMode('2d')}
+                className="absolute top-4 left-4 flex items-center gap-2 px-3 py-2 rounded-full
+                           bg-black/60 backdrop-blur-sm border border-white/10 text-white text-xs
+                           hover:bg-black/80 transition-all z-20">
+                {Ic.back} Floor Plan
+              </button>
+
+              {/* Room name badge */}
+              <div className="absolute top-4 right-4 flex items-center gap-2
+                              bg-black/60 backdrop-blur-sm border border-white/10
+                              rounded-full px-3 py-2 text-xs text-white pointer-events-none z-20">
+                {ROOM_TYPES.find(r=>r.value===currentRoom?.type)?.emoji} {currentRoom?.name}
+                <span className="text-gray-500 ml-1 font-mono">F{currentRoom?.floor||1}</span>
+              </div>
+
+              <RoomSettingsOverlay room={currentRoom}
+                onSave={updates=>updateRoom(currentRoom._id, updates)}/>
+            </>
+          )}
+
+          {viewMode==='3d-room' && !roomAsProject && (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+              <p className="text-gray-600 text-sm">Select a room to edit in 3D</p>
+              <button onClick={()=>setViewMode('2d')} className="btn-ghost text-sm">
+                ← Go to Floor Plan
+              </button>
             </div>
           )}
         </div>
       </div>
-
-      {showAddRoom && (
-        <AddRoomModal
-          onClose={() => setShowAddRoom(false)}
-          onAdd={async (roomData) => {
-            const updated = await addRoom(roomData);
-            setSelectedRoomIdx((updated.rooms?.length || 1) - 1);
-            setShowAddRoom(false);
-          }}
-        />
-      )}
-
-      {showImportRoom && (
-        <ImportRoomModal
-          onClose={() => setShowImportRoom(false)}
-          onImport={handleImportRoom}
-        />
-      )}
     </div>
   );
-};
+}
 
-// ---- House Furniture Panel ----
-const HouseFurniturePanel = ({ onAdd }) => {
-  const [furniture, setFurniture] = useState([]);
-  const [category, setCategory] = useState('all');
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const CATEGORIES = ['all','sofa','chair','table','bed','shelf','desk','lamp','cabinet','plant'];
+/* ── Inline properties panel ─────────────────────────────────────────── */
+function PropertiesPanel({ objects, selectedIndex, onSelect, onUpdate, onRemove, onDeselect }) {
+  const selected = selectedIndex!==null ? objects[selectedIndex] : null;
+  const [ls, setLs] = useState({x:1,y:1,z:1});
 
-  useEffect(() => {
-    setLoading(true);
-    const params = {};
-    if (category !== 'all') params.type = category;
-    if (search) params.search = search;
-    const t = setTimeout(() => {
-      furnitureAPI.list(params)
-        .then(({ data }) => setFurniture(Array.isArray(data.furniture) ? data.furniture : []))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }, 300);
-    return () => clearTimeout(t);
-  }, [category, search]);
-
-  return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="p-3 border-b border-border">
-        <input className="input text-sm" placeholder="Search furniture…"
-          value={search} onChange={(e) => setSearch(e.target.value)} />
-      </div>
-      <div className="flex gap-1 p-3 overflow-x-auto border-b border-border">
-        {CATEGORIES.map((cat) => (
-          <button key={cat} onClick={() => setCategory(cat)}
-            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${category === cat ? 'bg-brand-500 text-white' : 'bg-surface text-gray-400 hover:text-white'}`}>
-            {cat.charAt(0).toUpperCase() + cat.slice(1)}
-          </button>
-        ))}
-      </div>
-      <div className="flex-1 overflow-y-auto p-3">
-        {loading ? (
-          <div className="flex justify-center pt-8">
-            <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {furniture.map((item) => (
-              <button key={item._id} onClick={() => onAdd(item)}
-                className="card hover:border-brand-500 cursor-pointer text-left group">
-                <div className="aspect-square bg-surface rounded-lg mb-2 flex items-center justify-center">
-                  {item.thumbnailUrl
-                    ? <img src={item.thumbnailUrl} alt={item.name} className="w-full h-full object-cover rounded-lg" />
-                    : <span className="text-3xl">🪑</span>}
-                </div>
-                <p className="text-xs font-medium text-white truncate">{item.name}</p>
-                <p className="text-xs text-gray-500">${item.price}</p>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ---- Properties Panel ----
-const HousePropertiesPanel = ({ objects, selectedIndex, onSelect, onUpdate, onRemove, onDeselect }) => {
-  const selected = selectedIndex !== null ? objects[selectedIndex] : null;
-  const [localScale, setLocalScale] = useState({ x: 1, y: 1, z: 1 });
-  const [localColor, setLocalColor] = useState('#cccccc');
-
-  useEffect(() => {
-    const obj = selectedIndex !== null ? objects[selectedIndex] : null;
-    if (obj) {
-      setLocalScale(obj.scale || { x: 1, y: 1, z: 1 });
-      setLocalColor(obj.color || '#cccccc');
-    }
+  useEffect(()=>{
+    if (selectedIndex!==null && objects[selectedIndex])
+      setLs(objects[selectedIndex].scale||{x:1,y:1,z:1});
   }, [selectedIndex, objects]);
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="border-b border-border">
-        <p className="text-xs text-gray-500 font-medium px-3 pt-3 pb-2">Objects ({objects.length})</p>
-        <div className="max-h-36 overflow-y-auto">
-          {objects.length === 0 ? (
-            <p className="text-xs text-gray-600 px-3 pb-3">No objects yet.</p>
-          ) : objects.map((obj, i) => (
-            <div key={i} onClick={() => onSelect(i)}
-              className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors ${selectedIndex === i ? 'bg-brand-500/10 border-l-2 border-brand-500' : 'hover:bg-surface border-l-2 border-transparent'}`}>
-              <div className="flex items-center gap-2 overflow-hidden">
-                <div className="w-2 h-2 rounded-full bg-brand-500/60 shrink-0" />
-                <span className="text-xs text-white truncate">{obj.name}</span>
-              </div>
-              <button onClick={(e) => { e.stopPropagation(); onRemove(i); }}
-                className="text-gray-600 hover:text-red-400 text-xs ml-2 shrink-0">✕</button>
+      <div className="border-b border-gray-800 shrink-0">
+        <p className="text-[10px] text-gray-700 font-mono uppercase px-4 pt-3 pb-2 tracking-wider">
+          Objects ({objects.length})
+        </p>
+        <div className="max-h-40 overflow-y-auto">
+          {objects.length===0 ? (
+            <p className="text-xs text-gray-700 px-4 pb-3">No objects added.</p>
+          ) : objects.map((obj,i)=>(
+            <div key={i} onClick={()=>onSelect(i)}
+              className={`flex items-center justify-between px-4 py-2 cursor-pointer
+                          transition-colors border-l-2
+                          ${selectedIndex===i?'bg-white/5 border-l-white/30 text-white':'border-l-transparent text-gray-600 hover:text-gray-300 hover:bg-white/[0.02]'}`}>
+              <span className="text-xs truncate">{obj.name}</span>
+              <button onClick={e=>{e.stopPropagation();onRemove(i);}}
+                className="text-gray-700 hover:text-red-400 transition-colors ml-2 shrink-0">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
             </div>
           ))}
         </div>
       </div>
+
       {selected ? (
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-white font-medium text-sm truncate">{selected.name}</h3>
-            <button onClick={onDeselect} className="text-gray-500 hover:text-white text-xs">✕</button>
+            <span className="text-white font-medium text-xs truncate">{selected.name}</span>
+            <button onClick={onDeselect} className="text-gray-700 hover:text-white transition-colors">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
           </div>
-          {[
-            { label: 'Position', key: 'position', axes: ['x','y','z'], step: 0.1 },
-            { label: 'Rotation', key: 'rotation', axes: ['x','y','z'], step: 0.1 },
-          ].map(({ label, key, axes, step }) => (
-            <div key={key}>
-              <p className="text-xs text-gray-400 font-medium mb-2">{label}</p>
-              <div className="grid grid-cols-3 gap-1">
-                {axes.map((axis) => (
-                  <div key={axis}>
-                    <label className="text-xs text-gray-600 uppercase">{axis}</label>
-                    <input type="number" step={step} className="input text-xs py-1"
-                      value={selected[key]?.[axis] ?? 0}
-                      onChange={(e) => onUpdate(selectedIndex, { [key]: { ...selected[key], [axis]: parseFloat(e.target.value) || 0 } })} />
+
+          {[{l:'Position',k:'position'},{l:'Rotation (rad)',k:'rotation'}].map(({l,k})=>(
+            <div key={k}>
+              <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider mb-2">{l}</p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {['x','y','z'].map(ax=>(
+                  <div key={ax}>
+                    <label className="text-[10px] text-gray-700 font-mono uppercase block mb-1">{ax}</label>
+                    <input type="number" step={0.1}
+                      className="w-full bg-gray-950 border border-gray-800 rounded-lg px-2 py-1.5
+                                 text-white text-[11px] font-mono focus:outline-none focus:border-gray-600"
+                      value={selected[k]?.[ax]??0}
+                      onChange={e=>onUpdate(selectedIndex,{[k]:{...selected[k],[ax]:parseFloat(e.target.value)||0}})}/>
                   </div>
                 ))}
               </div>
             </div>
           ))}
+
           <div>
-            <p className="text-xs text-gray-400 font-medium mb-2">Scale</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] text-gray-600 font-mono uppercase tracking-wider">Scale</p>
+              <span className="text-[10px] font-mono text-gray-600">{(ls.x||1).toFixed(2)}×</span>
+            </div>
             <input type="range" min={0.1} max={5} step={0.05}
-              value={localScale.x}
-              onChange={(e) => {
-                const v = parseFloat(e.target.value);
-                const updated = { x: v, y: v, z: v };
-                setLocalScale(updated);
-                onUpdate(selectedIndex, { scale: updated });
+              value={ls.x||1}
+              onChange={e=>{
+                const v=parseFloat(e.target.value);
+                const u={x:v,y:v,z:v};
+                setLs(u); onUpdate(selectedIndex,{scale:u});
               }}
-              className="w-full accent-brand-500" />
-            <span className="text-xs text-gray-500">{localScale.x.toFixed(2)}x</span>
+              className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-gray-800
+                         [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5
+                         [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full
+                         [&::-webkit-slider-thumb]:bg-white"/>
           </div>
-          <div>
-            <p className="text-xs text-gray-400 font-medium mb-2">Color</p>
-            <input type="color" value={localColor}
-              onChange={(e) => { setLocalColor(e.target.value); onUpdate(selectedIndex, { color: e.target.value }); }}
-              className="w-full h-9 rounded-lg cursor-pointer border border-border bg-surface" />
-          </div>
-          <button onClick={() => onRemove(selectedIndex)}
-            className="w-full py-2 text-xs text-red-400 border border-red-500/30 hover:bg-red-500/10 rounded-lg transition-colors">
+
+          <button onClick={()=>onRemove(selectedIndex)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
+                       border border-red-500/20 text-red-500/70 text-xs
+                       hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400 transition-all">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+            </svg>
             Remove from room
           </button>
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center p-6 text-center">
-          <p className="text-gray-500 text-sm">Select an object to edit.</p>
+          <p className="text-gray-700 text-xs leading-relaxed">
+            Click an object in the 3D view or select from the list to edit.
+          </p>
         </div>
       )}
     </div>
   );
-};
-
-// ---- Room Settings Overlay ----
-const RoomSettingsOverlay = ({ room, onSave }) => {
-  const [open, setOpen] = useState(false);
-  const [dim, setDim] = useState(room?.dimensions || { width: 5, length: 5, height: 2.8 });
-  const [wallColor, setWallColor] = useState(room?.wallColor || '#f5f5f0');
-
-  useEffect(() => {
-    if (room) {
-      setDim(room.dimensions || { width: 5, length: 5, height: 2.8 });
-      setWallColor(room.wallColor || '#f5f5f0');
-    }
-  }, [room]);
-
-  return (
-    <div className="absolute bottom-4 right-4">
-      <button onClick={() => setOpen(!open)} className="btn-ghost text-xs flex items-center gap-1">
-        ⚙️ Room Settings
-      </button>
-      {open && (
-        <div className="absolute bottom-10 right-0 w-64 card shadow-2xl z-50">
-          <h4 className="text-white font-medium text-sm mb-3">Room Dimensions</h4>
-          <div className="space-y-2">
-            {[['Width (m)', 'width'], ['Length (m)', 'length'], ['Height (m)', 'height']].map(([label, key]) => (
-              <div key={key} className="flex items-center justify-between gap-2">
-                <label className="text-xs text-gray-400">{label}</label>
-                <input type="number" step="0.5" min="1" max="30"
-                  className="input text-xs py-1 w-20"
-                  value={dim[key] ?? 5}
-                  onChange={(e) => setDim(prev => ({ ...prev, [key]: e.target.value }))}
-                  onBlur={(e) => {
-                    const updated = { ...dim, [key]: parseFloat(e.target.value) || 1 };
-                    setDim(updated);
-                    onSave({ dimensions: updated });
-                  }} />
-              </div>
-            ))}
-          </div>
-          <div className="mt-3">
-            <label className="text-xs text-gray-400 block mb-1">Wall Color</label>
-            <input type="color" value={wallColor}
-              onChange={(e) => { setWallColor(e.target.value); onSave({ wallColor: e.target.value }); }}
-              className="w-full h-8 rounded cursor-pointer border border-border" />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ---- Add Room Modal ----
-const AddRoomModal = ({ onClose, onAdd }) => {
-  const [form, setForm] = useState({ name: '', type: 'living', dimensions: { width: 4, length: 4, height: 2.8 } });
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-      <div className="card w-full max-w-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold">Add Room</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-lg">✕</button>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs text-gray-400 block mb-1">Room Name</label>
-            <input className="input" placeholder="e.g. Master Bedroom"
-              value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          </div>
-          <div>
-            <label className="text-xs text-gray-400 block mb-2">Room Type</label>
-            <div className="grid grid-cols-4 gap-2">
-              {ROOM_TYPES.map(({ value, label, emoji }) => (
-                <button key={value} onClick={() => setForm({ ...form, type: value })}
-                  className={`card py-2 flex flex-col items-center gap-1 transition-all ${form.type === value ? 'border-brand-500 bg-brand-500/10' : 'hover:border-brand-500/50'}`}>
-                  <span className="text-lg">{emoji}</span>
-                  <span className="text-xs text-white">{label.split(' ')[0]}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-gray-400 block mb-2">Dimensions (m)</label>
-            <div className="grid grid-cols-3 gap-2">
-              {[['W', 'width'], ['L', 'length'], ['H', 'height']].map(([label, key]) => (
-                <div key={key}>
-                  <label className="text-xs text-gray-600">{label}</label>
-                  <input type="number" step="0.5" min="1" max="30" className="input text-xs py-1"
-                    value={form.dimensions[key]}
-                    onChange={(e) => setForm({ ...form, dimensions: { ...form.dimensions, [key]: parseFloat(e.target.value) || 1 } })} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-2 mt-5">
-          <button onClick={onClose} className="btn-ghost flex-1">Cancel</button>
-          <button onClick={() => { if (!form.name.trim()) return; onAdd(form); }}
-            disabled={!form.name.trim()} className="btn-primary flex-1">Add Room</button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ---- Import Room Modal ----
-const ImportRoomModal = ({ onClose, onImport }) => {
-  const { projects, loadProjects } = useProject();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadProjects().finally(() => setLoading(false));
-  }, [loadProjects]);
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-      <div className="card w-full max-w-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold">Import Room</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-white text-lg">✕</button>
-        </div>
-        <p className="text-gray-400 text-xs mb-4">Import an existing room project into this house.</p>
-        {loading ? (
-          <div className="flex justify-center py-6">
-            <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : projects.length === 0 ? (
-          <p className="text-gray-500 text-sm text-center py-6">No room projects found.</p>
-        ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {projects.filter(Boolean).map((project) => (
-              <button key={project._id} onClick={() => onImport(project)}
-                className="w-full card hover:border-brand-500 text-left flex items-center justify-between group">
-                <div>
-                  <p className="text-white text-sm font-medium">{project.name}</p>
-                  <p className="text-gray-500 text-xs">
-                    {project.roomDimensions?.width || 5}m × {project.roomDimensions?.length || 5}m
-                    · {project.objects?.length || 0} items
-                  </p>
-                </div>
-                <span className="text-brand-500 text-xs opacity-0 group-hover:opacity-100">Import →</span>
-              </button>
-            ))}
-          </div>
-        )}
-        <button onClick={onClose} className="btn-ghost w-full mt-4 text-sm">Cancel</button>
-      </div>
-    </div>
-  );
-};
-
-export default HouseDesignerPage;
+}

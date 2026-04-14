@@ -1,274 +1,261 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 
-const GRID_SIZE = 40; // pixels per meter
-const MIN_ROOM_SIZE = 2; // meters
+const GRID  = 40;
+const MIN_S = 2;
 
-const ROOM_COLORS = {
-  living:   { bg: '#1e3a5f', border: '#4f6ef7', label: '#93bbff' },
-  bedroom:  { bg: '#2d1b3d', border: '#9b59b6', label: '#d4a0f0' },
-  office:   { bg: '#1a3a2a', border: '#27ae60', label: '#82d9a0' },
-  dining:   { bg: '#3d2a1a', border: '#e67e22', label: '#f4b97a' },
-  kitchen:  { bg: '#3d1a1a', border: '#e74c3c', label: '#f4928a' },
-  bathroom: { bg: '#1a2d3d', border: '#1abc9c', label: '#7de8d4' },
-  other:    { bg: '#252a3d', border: '#7f8c8d', label: '#b0b8c1' },
+const PAL = {
+  living:   { bg:'#1e3a5f', border:'#4f6ef7', label:'#93bbff' },
+  bedroom:  { bg:'#2d1b3d', border:'#9b59b6', label:'#d4a0f0' },
+  office:   { bg:'#1a3a2a', border:'#27ae60', label:'#82d9a0' },
+  dining:   { bg:'#3d2a1a', border:'#e67e22', label:'#f4b97a' },
+  kitchen:  { bg:'#3d1a1a', border:'#e74c3c', label:'#f4928a' },
+  bathroom: { bg:'#1a2d3d', border:'#1abc9c', label:'#7de8d4' },
+  other:    { bg:'#252a3d', border:'#7f8c8d', label:'#b0b8c1' },
 };
+const EMOJIS = { living:'🛋️', bedroom:'🛏️', office:'💼', dining:'🍽️', kitchen:'🍳', bathroom:'🚿', other:'🏠' };
+const snap = v => Math.round(v / GRID) * GRID;
 
-const ROOM_EMOJIS = {
-  living: '🛋️', bedroom: '🛏️', office: '💼',
-  dining: '🍽️', kitchen: '🍳', bathroom: '🚿', other: '🏠',
-};
+// floor badge colours
+const FLOOR_BADGE = ['','#4f6ef7','#27ae60','#e67e22','#e74c3c','#9b59b6'];
 
-const snapToGrid = (val) => Math.round(val / GRID_SIZE) * GRID_SIZE;
+export default function FloorPlan({ house, onSelectRoom, onUpdateRoom, selectedRoomIdx }) {
+  const canvasRef   = useRef(null);
+  const containerRef= useRef(null);
+  const [dragging,  setDragging]  = useState(null);
+  const [resizing,  setResizing]  = useState(null);
+  const [hovered,   setHovered]   = useState(null);
+  const [size,      setSize]      = useState({ width:800, height:600 });
+  const [floorFilter, setFloorFilter] = useState(0); // 0 = all
 
-const FloorPlan = ({ house, onSelectRoom, onUpdateRoom, selectedRoomIdx }) => {
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null);
-  const [dragging, setDragging] = useState(null); // { roomId, offsetX, offsetY }
-  const [resizing, setResizing] = useState(null); // { roomId, handle, startX, startY, startW, startH }
-  const [hoveredRoom, setHoveredRoom] = useState(null);
-  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
+  const rooms = useMemo(() => house?.rooms||[], [house?.rooms]);
 
-  const rooms = useMemo(() => house?.rooms || [], [house?.rooms]);
+  // unique floors
+  const floors = useMemo(() => {
+    const s = new Set(rooms.map(r => r.floor||1));
+    return Array.from(s).sort((a,b)=>a-b);
+  }, [rooms]);
 
-  // Resize canvas to container
+  const visible = useMemo(() =>
+    floorFilter===0 ? rooms : rooms.filter(r=>(r.floor||1)===floorFilter),
+  [rooms, floorFilter]);
+
+  // resize observer
   useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        setCanvasSize({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
-        });
-      }
+    const update = () => {
+      if (containerRef.current)
+        setSize({ width:containerRef.current.offsetWidth, height:containerRef.current.offsetHeight });
     };
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
   }, []);
 
-  // Draw floor plan on canvas
+  // draw
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const { width, height } = canvasSize;
+    const { width:W, height:H } = size;
+    ctx.clearRect(0,0,W,H);
 
-    ctx.clearRect(0, 0, width, height);
+    // background
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0,0,W,H);
 
-    // Background
-    ctx.fillStyle = '#0f1117';
-    ctx.fillRect(0, 0, width, height);
-
-    // Grid
-    ctx.strokeStyle = '#1a1f2e';
+    // grid
+    ctx.strokeStyle = '#161616';
     ctx.lineWidth = 1;
-    for (let x = 0; x < width; x += GRID_SIZE) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
-    }
-    for (let y = 0; y < height; y += GRID_SIZE) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
-    }
+    for (let x=0; x<W; x+=GRID) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for (let y=0; y<H; y+=GRID) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
 
-    // Rooms
-    rooms.forEach((room, i) => {
-      const pos = room.position2D || { x: 40 + i * 20, y: 40 + i * 20 };
-      const dim = room.dimensions || { width: 5, length: 5 };
-      const rx = pos.x;
-      const ry = pos.y;
-      const rw = dim.width * GRID_SIZE;
-      const rh = dim.length * GRID_SIZE;
-      const colors = ROOM_COLORS[room.type] || ROOM_COLORS.other;
-      const isSelected = selectedRoomIdx === i;
-      const isHovered = hoveredRoom === i;
+    // rooms
+    visible.forEach((room, vi) => {
+      const ri  = rooms.indexOf(room);
+      const pos = room.position2D||{ x:40+ri*22, y:40+ri*22 };
+      const dim = room.dimensions||{ width:5, length:5 };
+      const rx=pos.x, ry=pos.y;
+      const rw=dim.width*GRID, rh=dim.length*GRID;
+      const pal     = PAL[room.type]||PAL.other;
+      const isSel   = selectedRoomIdx===ri;
+      const isHov   = hovered===ri;
+      const fl      = room.floor||1;
 
-      // Room fill
-      ctx.fillStyle = colors.bg;
-      ctx.fillRect(rx, ry, rw, rh);
+      // drop shadow
+      ctx.shadowColor   = isSel ? pal.border : 'transparent';
+      ctx.shadowBlur    = isSel ? 16 : 0;
 
-      // Room border
-      ctx.strokeStyle = isSelected ? '#ffffff' : isHovered ? colors.label : colors.border;
-      ctx.lineWidth = isSelected ? 2.5 : isHovered ? 2 : 1.5;
-      ctx.strokeRect(rx, ry, rw, rh);
+      // fill
+      ctx.fillStyle = pal.bg;
+      ctx.beginPath();
+      ctx.roundRect?.(rx,ry,rw,rh,4) || ctx.rect(rx,ry,rw,rh);
+      ctx.fill();
 
-      // Selection glow
-      if (isSelected) {
-        ctx.shadowColor = colors.border;
-        ctx.shadowBlur = 12;
-        ctx.strokeRect(rx, ry, rw, rh);
-        ctx.shadowBlur = 0;
-      }
+      // border
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = isSel ? '#ffffff' : isHov ? pal.label : pal.border;
+      ctx.lineWidth   = isSel ? 2.5 : isHov ? 2 : 1.5;
+      ctx.beginPath();
+      ctx.roundRect?.(rx,ry,rw,rh,4) || ctx.rect(rx,ry,rw,rh);
+      ctx.stroke();
 
-      // Room label
-      const emoji = ROOM_EMOJIS[room.type] || '🏠';
-      const label = room.name || 'Room';
-      const dimLabel = `${dim.width}×${dim.length}m`;
+      // labels
+      const emoji = EMOJIS[room.type]||'🏠';
+      const label = room.name||'Room';
+      const dimL  = `${dim.width}×${dim.length}m`;
 
-      ctx.fillStyle = colors.label;
-      ctx.font = `bold ${Math.min(14, rw / 5)}px DM Sans, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      if (rw > 60 && rh > 50) {
-        ctx.font = `${Math.min(18, rh / 4)}px serif`;
-        ctx.fillText(emoji, rx + rw / 2, ry + rh / 2 - 18);
-        ctx.font = `bold ${Math.min(13, rw / 6)}px DM Sans, sans-serif`;
-        ctx.fillStyle = colors.label;
-        ctx.fillText(label, rx + rw / 2, ry + rh / 2 + 4);
-        ctx.font = `${Math.min(10, rw / 8)}px DM Sans, sans-serif`;
-        ctx.fillStyle = '#6b7280';
-        ctx.fillText(dimLabel, rx + rw / 2, ry + rh / 2 + 20);
+      if (rw>60 && rh>50) {
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.font=`${Math.min(18,rh/4)}px serif`;
+        ctx.fillStyle=pal.label;
+        ctx.fillText(emoji, rx+rw/2, ry+rh/2-18);
+        ctx.font=`bold ${Math.min(13,rw/6)}px DM Sans,sans-serif`;
+        ctx.fillText(label, rx+rw/2, ry+rh/2+4);
+        ctx.font=`${Math.min(10,rw/8)}px DM Sans,sans-serif`;
+        ctx.fillStyle='#55606e';
+        ctx.fillText(dimL, rx+rw/2, ry+rh/2+20);
       } else {
-        ctx.fillText(emoji, rx + rw / 2, ry + rh / 2);
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.font=`${Math.min(14,rw/2)}px serif`;
+        ctx.fillStyle=pal.label;
+        ctx.fillText(emoji, rx+rw/2, ry+rh/2);
       }
 
-      // Resize handle (bottom-right corner)
-      if (isSelected) {
-        ctx.fillStyle = '#4f6ef7';
-        ctx.fillRect(rx + rw - 8, ry + rh - 8, 8, 8);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '8px sans-serif';
-        ctx.fillText('⤡', rx + rw - 4, ry + rh - 4);
+      // floor badge (top-left)
+      const bc = FLOOR_BADGE[fl]||'#4f6ef7';
+      ctx.fillStyle = bc + 'cc';
+      ctx.beginPath();
+      ctx.roundRect?.(rx+4,ry+4,22,16,4) || ctx.rect(rx+4,ry+4,22,16);
+      ctx.fill();
+      ctx.fillStyle='#fff';
+      ctx.font='bold 9px monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(`F${fl}`, rx+15, ry+12);
+
+      // resize handle
+      if (isSel) {
+        ctx.fillStyle='#4f6ef7';
+        ctx.fillRect(rx+rw-9,ry+rh-9,9,9);
+        ctx.fillStyle='#fff';
+        ctx.font='8px sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('⤡', rx+rw-4.5, ry+rh-4.5);
       }
     });
 
-    // Compass
-    ctx.fillStyle = '#374151';
-    ctx.font = '11px DM Sans, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('N ↑', 12, 20);
+    // compass
+    ctx.fillStyle='#2e3640';
+    ctx.font='11px monospace';
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('N ↑', 12, 12);
 
-  }, [rooms, selectedRoomIdx, hoveredRoom, canvasSize]);
+  }, [visible, rooms, selectedRoomIdx, hovered, size]);
 
-  // Get room index at mouse position
-  const getRoomAtPos = useCallback((x, y) => {
-    for (let i = rooms.length - 1; i >= 0; i--) {
-      const room = rooms[i];
-      const pos = room.position2D || { x: 40 + i * 20, y: 40 + i * 20 };
-      const dim = room.dimensions || { width: 5, length: 5 };
-      const rw = dim.width * GRID_SIZE;
-      const rh = dim.length * GRID_SIZE;
-      if (x >= pos.x && x <= pos.x + rw && y >= pos.y && y <= pos.y + rh) {
-        return i;
-      }
+  // hit-test (against all rooms, not just visible)
+  const roomAt = useCallback((x,y) => {
+    for (let i=rooms.length-1; i>=0; i--) {
+      const r = rooms[i];
+      const pos = r.position2D||{ x:40+i*22, y:40+i*22 };
+      const dim = r.dimensions||{ width:5, length:5 };
+      if (x>=pos.x && x<=pos.x+dim.width*GRID && y>=pos.y && y<=pos.y+dim.length*GRID) return i;
     }
     return -1;
   }, [rooms]);
 
-  // Check if mouse is on resize handle
-  const isOnResizeHandle = useCallback((x, y, roomIdx) => {
-    const room = rooms[roomIdx];
-    if (!room) return false;
-    const pos = room.position2D || { x: 40 + roomIdx * 20, y: 40 + roomIdx * 20 };
-    const dim = room.dimensions || { width: 5, length: 5 };
-    const rw = dim.width * GRID_SIZE;
-    const rh = dim.length * GRID_SIZE;
-    return x >= pos.x + rw - 12 && x <= pos.x + rw && y >= pos.y + rh - 12 && y <= pos.y + rh;
+  const onResize = useCallback((x,y,ri) => {
+    const r = rooms[ri];
+    if (!r) return false;
+    const pos = r.position2D||{ x:40+ri*22, y:40+ri*22 };
+    const dim = r.dimensions||{ width:5, length:5 };
+    return x>=pos.x+dim.width*GRID-12 && x<=pos.x+dim.width*GRID
+        && y>=pos.y+dim.length*GRID-12 && y<=pos.y+dim.length*GRID;
   }, [rooms]);
 
-  const handleMouseDown = useCallback((e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const idx = getRoomAtPos(x, y);
+  const mousePos = e => {
+    const r = canvasRef.current.getBoundingClientRect();
+    return { x: e.clientX-r.left, y: e.clientY-r.top };
+  };
 
-    if (idx === -1) { onSelectRoom(null); return; }
-
-    onSelectRoom(idx);
-    const room = rooms[idx];
-    const pos = room.position2D || { x: 40 + idx * 20, y: 40 + idx * 20 };
-    const dim = room.dimensions || { width: 5, length: 5 };
-
-    if (isOnResizeHandle(x, y, idx)) {
-      setResizing({
-        roomIdx: idx,
-        startX: x, startY: y,
-        startW: dim.width, startH: dim.length,
-      });
+  const handleDown = useCallback(e => {
+    const { x,y } = mousePos(e);
+    const ri = roomAt(x,y);
+    if (ri===-1) { onSelectRoom(null); return; }
+    onSelectRoom(ri);
+    const room = rooms[ri];
+    const pos  = room.position2D||{ x:40+ri*22, y:40+ri*22 };
+    const dim  = room.dimensions||{ width:5, length:5 };
+    if (onResize(x,y,ri)) {
+      setResizing({ ri, startX:x, startY:y, startW:dim.width, startH:dim.length });
     } else {
-      setDragging({
-        roomIdx: idx,
-        offsetX: x - pos.x,
-        offsetY: y - pos.y,
-      });
+      setDragging({ ri, offX:x-pos.x, offY:y-pos.y });
     }
-  }, [getRoomAtPos, isOnResizeHandle, rooms, onSelectRoom]);
+  }, [roomAt, onResize, rooms, onSelectRoom]);
 
-  const handleMouseMove = useCallback((e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  const handleMove = useCallback(e => {
+    const { x,y } = mousePos(e);
+    const ri = roomAt(x,y);
+    setHovered(ri===-1?null:ri);
+    canvasRef.current.style.cursor =
+      ri!==-1 && onResize(x,y,ri) ? 'se-resize' : ri!==-1 ? 'grab' : 'default';
 
-    // Update hover
-    const idx = getRoomAtPos(x, y);
-    setHoveredRoom(idx === -1 ? null : idx);
-
-    // Update cursor
-    if (idx !== -1 && isOnResizeHandle(x, y, idx)) {
-      canvasRef.current.style.cursor = 'se-resize';
-    } else if (idx !== -1) {
-      canvasRef.current.style.cursor = 'grab';
-    } else {
-      canvasRef.current.style.cursor = 'default';
+    if (dragging) {
+      canvasRef.current.style.cursor='grabbing';
+      const nx=snap(x-dragging.offX), ny=snap(y-dragging.offY);
+      const room=rooms[dragging.ri];
+      onUpdateRoom(room._id,{ position2D:{ x:Math.max(0,nx), y:Math.max(0,ny) } });
     }
-
-    if (dragging !== null) {
-      canvasRef.current.style.cursor = 'grabbing';
-      const newX = snapToGrid(x - dragging.offsetX);
-      const newY = snapToGrid(y - dragging.offsetY);
-      const room = rooms[dragging.roomIdx];
-      onUpdateRoom(room._id, {
-        position2D: { x: Math.max(0, newX), y: Math.max(0, newY) },
-      });
+    if (resizing) {
+      canvasRef.current.style.cursor='se-resize';
+      const dx=x-resizing.startX, dy=y-resizing.startY;
+      const nW=Math.max(MIN_S, Math.round((resizing.startW+dx/GRID)*2)/2);
+      const nH=Math.max(MIN_S, Math.round((resizing.startH+dy/GRID)*2)/2);
+      const room=rooms[resizing.ri];
+      onUpdateRoom(room._id,{ dimensions:{ ...room.dimensions, width:nW, length:nH } });
     }
+  }, [dragging, resizing, roomAt, onResize, rooms, onUpdateRoom]);
 
-    if (resizing !== null) {
-      canvasRef.current.style.cursor = 'se-resize';
-      const dx = x - resizing.startX;
-      const dy = y - resizing.startY;
-      const newW = Math.max(MIN_ROOM_SIZE, Math.round((resizing.startW + dx / GRID_SIZE) * 2) / 2);
-      const newH = Math.max(MIN_ROOM_SIZE, Math.round((resizing.startH + dy / GRID_SIZE) * 2) / 2);
-      const room = rooms[resizing.roomIdx];
-      onUpdateRoom(room._id, {
-        dimensions: { ...room.dimensions, width: newW, length: newH },
-      });
-    }
-  }, [dragging, resizing, getRoomAtPos, isOnResizeHandle, rooms, onUpdateRoom]);
-
-  const handleMouseUp = useCallback(() => {
-    setDragging(null);
-    setResizing(null);
-  }, []);
-
-  const handleDoubleClick = useCallback((e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const idx = getRoomAtPos(x, y);
-    if (idx !== -1) onSelectRoom(idx, true); // true = open 3D designer
-  }, [getRoomAtPos, onSelectRoom]);
+  const handleUp   = useCallback(() => { setDragging(null); setResizing(null); }, []);
+  const handleDbl  = useCallback(e => {
+    const { x,y } = mousePos(e);
+    const ri = roomAt(x,y);
+    if (ri!==-1) onSelectRoom(ri, true);
+  }, [roomAt, onSelectRoom]);
 
   return (
     <div ref={containerRef} className="w-full h-full relative">
-      <canvas
-        ref={canvasRef}
-        width={canvasSize.width}
-        height={canvasSize.height}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onDoubleClick={handleDoubleClick}
-        className="block"
-      />
+      {/* Floor filter tabs */}
+      {floors.length>1 && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10
+                        flex items-center gap-1 bg-black/75 backdrop-blur-sm
+                        border border-gray-800 rounded-xl px-2 py-1.5">
+          <button onClick={()=>setFloorFilter(0)}
+            className={`px-3 py-1 rounded-lg text-xs font-mono transition-all
+              ${floorFilter===0?'bg-white text-black':'text-gray-500 hover:text-white'}`}>
+            All
+          </button>
+          {floors.map(f=>(
+            <button key={f} onClick={()=>setFloorFilter(f)}
+              className={`px-3 py-1 rounded-lg text-xs font-mono transition-all
+                ${floorFilter===f?'bg-white text-black':'text-gray-500 hover:text-white'}`}>
+              F{f}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <canvas ref={canvasRef} width={size.width} height={size.height}
+        onMouseDown={handleDown} onMouseMove={handleMove}
+        onMouseUp={handleUp} onMouseLeave={handleUp}
+        onDoubleClick={handleDbl} className="block"/>
+
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur rounded-xl p-3 text-xs text-gray-400 space-y-1">
-        <p className="text-white font-medium mb-2">Floor Plan</p>
+      <div className="absolute bottom-4 left-4 bg-black/65 backdrop-blur rounded-xl
+                      p-3 text-xs text-gray-500 space-y-1 pointer-events-none">
+        <p className="text-white font-semibold mb-2 text-xs">2D Floor Plan</p>
         <p>Click — select room</p>
         <p>Drag — move room</p>
         <p>⤡ corner — resize</p>
-        <p>Double click — edit in 3D</p>
+        <p>Double-click — edit in 3D</p>
       </div>
     </div>
   );
-};
-
-export default FloorPlan;
+}
