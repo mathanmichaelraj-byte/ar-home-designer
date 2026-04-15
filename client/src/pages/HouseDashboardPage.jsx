@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useHouse } from '../context/HouseContext';
 import { ROOM_EMOJI, ROOM_BADGE_CLS } from '../utils/constants';
-import { formatAgo } from '../utils/helpers';
 
 const ROOM_EMOJIS  = ROOM_EMOJI;
 const ROOM_COLORS  = ROOM_BADGE_CLS;
