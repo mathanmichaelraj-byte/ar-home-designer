@@ -182,11 +182,10 @@ const MBtn = ({ active, onClick, title, key2, icon }) => (
     style={{all:'unset'}}
     className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg text-xs
                 font-medium transition-all duration-150 select-none cursor-pointer
-                ${active 
-  ? 'bg-white text-black' 
-  : 'text-gray-400 hover:bg-gray-100 hover:text-black'}
-transition-colors duration-150 rounded-md
-focus:outline-none focus:ring-2 focus:ring-gray-400`}>
+                ${active
+                  ? 'bg-black text-white'
+                  : 'text-black hover:bg-gray-200'}
+                focus:outline-none focus:ring-2 focus:ring-gray-400`}>
     <span className="text-base leading-none">{icon}</span>
     <span className="text-[10px] leading-none font-mono">{key2}</span>
   </button>
@@ -257,33 +256,31 @@ export default function SceneViewer({ project, selectedIdx, onSelect, onUpdateOb
           minPolarAngle={0} maxPolarAngle={Math.PI/2.05}/>
       </Canvas>
 
-      {/* ── Transform toolbar ─────────────────────────────────── */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10
-                      flex items-center gap-1 px-2 py-1.5 rounded-xl
-                      bg-white/90 backdrop-blur-md border border-gray-200
-                      shadow-[0_4px_20px_rgba(0,0,0,0.18)]">
-        <MBtn active={mode==='translate'} onClick={()=>setMode('translate')} title="Move"   key2="W" icon="✥"/>
-        <div className="w-px h-5 bg-gray-200"/>
-        <MBtn active={mode==='rotate'}    onClick={()=>setMode('rotate')}    title="Rotate" key2="E" icon="↻"/>
-        <div className="w-px h-5 bg-gray-200"/>
-        <MBtn active={mode==='scale'}     onClick={()=>setMode('scale')}     title="Scale"  key2="R" icon="⤢"/>
-        {selectedIdx!==null && (
-          <>
-            <div className="w-px h-5 bg-gray-200 mx-0.5"/>
-            <button
-              onClick={() => onDeleteObject?.(selectedIdx)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium
-                         text-red-500 hover:bg-red-50 transition-colors">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" strokeWidth="2.5">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6l-1 14H6L5 6"/>
-              </svg>
-              Delete
-            </button>
-          </>
-        )}
-      </div>
+      {/* ── Transform toolbar — only visible when a model is selected ── */}
+      {selectedIdx !== null && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10
+                        flex items-center gap-1 px-2 py-1.5 rounded-xl
+                        bg-white backdrop-blur-md border border-gray-300
+                        shadow-[0_4px_20px_rgba(0,0,0,0.35)]">
+          <MBtn active={mode==='translate'} onClick={()=>setMode('translate')} title="Move"   key2="W" icon="✥"/>
+          <div className="w-px h-5 bg-gray-300"/>
+          <MBtn active={mode==='rotate'}    onClick={()=>setMode('rotate')}    title="Rotate" key2="E" icon="↻"/>
+          <div className="w-px h-5 bg-gray-300"/>
+          <MBtn active={mode==='scale'}     onClick={()=>setMode('scale')}     title="Scale"  key2="R" icon="⤢"/>
+          <div className="w-px h-5 bg-gray-300 mx-0.5"/>
+          <button
+            onClick={() => onDeleteObject?.(selectedIdx)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium
+                       text-red-500 hover:bg-red-50 transition-colors">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" strokeWidth="2.5">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14H6L5 6"/>
+            </svg>
+            Delete
+          </button>
+        </div>
+      )}
 
       {/* ── Bottom hints ──────────────────────────────────────── */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-none
