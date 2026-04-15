@@ -5,10 +5,17 @@ import { useGLTF } from '@react-three/drei';
 import { SCENE } from '../utils/constants';
 import { round } from '../utils/helpers';
 
+export const sanitizeColor = (color, fallback = '#cccccc') => {
+  if (!color || typeof color !== 'string') return fallback;
+  if (color.startsWith('#') && color.length === 9) return color.slice(0, 7);
+  if (color.startsWith('#') && color.length === 7) return color;
+  return fallback;
+};  
+
 /* ── Room geometry ──────────────────────────────────────────────────── */
 function Room({ dimensions, wallColor }) {
   const { width:W=5, length:L=5, height:H=2.8 } = dimensions||{};
-  const wc  = wallColor || SCENE.wallColor;
+  const wc  = sanitizeColor(wallColor, SCENE.wallColor);;
   const sk  = '#d4b896';
   const skH = 0.12;
   const skD = 0.04;
