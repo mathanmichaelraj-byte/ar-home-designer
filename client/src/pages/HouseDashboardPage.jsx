@@ -2,21 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useHouse } from '../context/HouseContext';
+import { ROOM_EMOJI, ROOM_BADGE_CLS } from '../utils/constants';
+import { formatAgo } from '../utils/helpers';
 
-const ROOM_EMOJIS = {
-  living: '🛋️', bedroom: '🛏️', office: '💼',
-  dining: '🍽️', kitchen: '🍳', bathroom: '🚿', other: '🏠',
-};
-
-const ROOM_COLORS = {
-  living: 'bg-blue-500/10 border-blue-500/20',
-  bedroom: 'bg-purple-500/10 border-purple-500/20',
-  office: 'bg-green-500/10 border-green-500/20',
-  dining: 'bg-orange-500/10 border-orange-500/20',
-  kitchen: 'bg-red-500/10 border-red-500/20',
-  bathroom: 'bg-teal-500/10 border-teal-500/20',
-  other: 'bg-gray-800 border-gray-700',
-};
+const ROOM_EMOJIS  = ROOM_EMOJI;
+const ROOM_COLORS  = ROOM_BADGE_CLS;
 
 const SkeletonCard = () => (
   <div className="card animate-pulse">

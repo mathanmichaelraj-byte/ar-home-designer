@@ -1,22 +1,14 @@
-import React, { useMemo } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { ROOM_PAL_3D, ROOM_EMOJI, SCENE, G2M } from '../utils/constants';
+import { floorLabel } from '../utils/helpers';
 
-const FLOOR_H = 3.5;
-const G2M     = 1 / 40;
-
-const PAL = {
-  living:   { fill:'#1e3a6e', line:'#4a72c8' },
-  bedroom:  { fill:'#3d1e6e', line:'#8c52cc' },
-  office:   { fill:'#1a4a28', line:'#2eaa55' },
-  dining:   { fill:'#5a2008', line:'#cc5a1a' },
-  kitchen:  { fill:'#5a1a1a', line:'#cc3030' },
-  bathroom: { fill:'#08383e', line:'#0a9898' },
-  other:    { fill:'#222630', line:'#5a6270' },
-};
-const EMOJI = { living:'🛋️', bedroom:'🛏️', office:'💼', dining:'🍽️', kitchen:'🍳', bathroom:'🚿', other:'🏠' };
-const FLR   = n => n===1?'Ground':n===2?'1st Fl.':n===3?'2nd Fl.':`${n-1}th Fl.`;
+const FLOOR_H = SCENE.floorH;
+const PAL     = ROOM_PAL_3D;
+const EMOJI   = ROOM_EMOJI;
+const FLR     = floorLabel;
 
 /* ── Floor slab ─────────────────────────────────────────────────────── */
 function Slab({ n, W, D }) {
@@ -125,6 +117,20 @@ function RoomBox({ room, idx, sel, onSel, onEdit }) {
   );
 }
 
+/* ── Camera setup ───────────────────────────────────────────────────── */
+function CameraSetup({ cam, tgt }) {
+  const { camera, invalidate } = useThree();
+  const initialized = useRef(false);
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    camera.position.set(...cam);
+    camera.lookAt(...tgt);
+    invalidate();
+  }, [cam, tgt, camera, invalidate]);
+  return null;
+}
+
 /* ── Main component ─────────────────────────────────────────────────── */
 export default function FloorPlan3D({ house, selectedRoomIdx, onSelectRoom }) {
   const rooms  = useMemo(() => house?.rooms||[], [house?.rooms]);
@@ -159,9 +165,10 @@ export default function FloorPlan3D({ house, selectedRoomIdx, onSelectRoom }) {
 
   return (
     <div className="w-full h-full relative" style={{background:'#080808'}}>
-      <Canvas shadows dpr={[1,2]} camera={{position:cam, fov:42}}
+      <Canvas shadows dpr={[1,2]} camera={{position:cam, fov:42, near:0.1, far:500}}
         style={{background:'#080808'}} onPointerMissed={() => onSelectRoom(null)}>
 
+        <CameraSetup cam={cam} tgt={tgt}/>
         <ambientLight intensity={0.4}/>
         <directionalLight position={[22,38,18]} intensity={1.35} castShadow
           shadow-mapSize={[2048,2048]}/>
@@ -183,7 +190,8 @@ export default function FloorPlan3D({ house, selectedRoomIdx, onSelectRoom }) {
             onEdit={idx => onSelectRoom(idx, true)}/>
         ))}
 
-        <OrbitControls target={tgt} enableDamping dampingFactor={0.06}
+        <OrbitControls makeDefault enableDamping dampingFactor={0.06} enablePan
+          target={tgt}
           minPolarAngle={0.12} maxPolarAngle={Math.PI/2.05}
           minDistance={3} maxDistance={90}/>
       </Canvas>

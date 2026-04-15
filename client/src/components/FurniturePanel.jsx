@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { furnitureAPI } from '../utils/api';
 import { useProject } from '../context/ProjectContext';
+import { FURNITURE_CATEGORIES } from '../utils/constants';
 
-const CATS = ['all','sofa','chair','table','bed','shelf','desk','lamp','cabinet','plant'];
+const CATS = FURNITURE_CATEGORIES.map(c => c.id);
 
 export default function FurniturePanel() {
   const [furniture, setFurniture] = useState([]);

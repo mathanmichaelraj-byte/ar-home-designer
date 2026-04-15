@@ -1,22 +1,13 @@
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { GRID_SIZE, MIN_ROOM_SIZE, ROOM_PAL_2D, ROOM_EMOJI, FLOOR_BADGE_COLORS } from '../utils/constants';
+import { snapToGrid } from '../utils/helpers';
 
-const GRID  = 40;
-const MIN_S = 2;
-
-const PAL = {
-  living:   { bg:'#1e3a5f', border:'#4f6ef7', label:'#93bbff' },
-  bedroom:  { bg:'#2d1b3d', border:'#9b59b6', label:'#d4a0f0' },
-  office:   { bg:'#1a3a2a', border:'#27ae60', label:'#82d9a0' },
-  dining:   { bg:'#3d2a1a', border:'#e67e22', label:'#f4b97a' },
-  kitchen:  { bg:'#3d1a1a', border:'#e74c3c', label:'#f4928a' },
-  bathroom: { bg:'#1a2d3d', border:'#1abc9c', label:'#7de8d4' },
-  other:    { bg:'#252a3d', border:'#7f8c8d', label:'#b0b8c1' },
-};
-const EMOJIS = { living:'🛋️', bedroom:'🛏️', office:'💼', dining:'🍽️', kitchen:'🍳', bathroom:'🚿', other:'🏠' };
-const snap = v => Math.round(v / GRID) * GRID;
-
-// floor badge colours
-const FLOOR_BADGE = ['','#4f6ef7','#27ae60','#e67e22','#e74c3c','#9b59b6'];
+const GRID  = GRID_SIZE;
+const MIN_S = MIN_ROOM_SIZE;
+const PAL   = ROOM_PAL_2D;
+const EMOJIS = ROOM_EMOJI;
+const FLOOR_BADGE = FLOOR_BADGE_COLORS;
+const snap = v => snapToGrid(v, GRID);
 
 export default function FloorPlan({ house, onSelectRoom, onUpdateRoom, selectedRoomIdx }) {
   const canvasRef   = useRef(null);
@@ -170,12 +161,13 @@ export default function FloorPlan({ house, onSelectRoom, onUpdateRoom, selectedR
         && y>=pos.y+dim.length*GRID-12 && y<=pos.y+dim.length*GRID;
   }, [rooms]);
 
-  const mousePos = e => {
-    const r = canvasRef.current.getBoundingClientRect();
-    return { x: e.clientX-r.left, y: e.clientY-r.top };
-  };
+  const mousePos = e => ({
+    x: e.nativeEvent.offsetX,
+    y: e.nativeEvent.offsetY,
+  });
 
   const handleDown = useCallback(e => {
+    e.preventDefault();
     const { x,y } = mousePos(e);
     const ri = roomAt(x,y);
     if (ri===-1) { onSelectRoom(null); return; }
@@ -194,27 +186,34 @@ export default function FloorPlan({ house, onSelectRoom, onUpdateRoom, selectedR
     const { x,y } = mousePos(e);
     const ri = roomAt(x,y);
     setHovered(ri===-1?null:ri);
-    canvasRef.current.style.cursor =
-      ri!==-1 && onResize(x,y,ri) ? 'se-resize' : ri!==-1 ? 'grab' : 'default';
 
     if (dragging) {
       canvasRef.current.style.cursor='grabbing';
       const nx=snap(x-dragging.offX), ny=snap(y-dragging.offY);
       const room=rooms[dragging.ri];
       onUpdateRoom(room._id,{ position2D:{ x:Math.max(0,nx), y:Math.max(0,ny) } });
-    }
-    if (resizing) {
+    } else if (resizing) {
       canvasRef.current.style.cursor='se-resize';
       const dx=x-resizing.startX, dy=y-resizing.startY;
       const nW=Math.max(MIN_S, Math.round((resizing.startW+dx/GRID)*2)/2);
       const nH=Math.max(MIN_S, Math.round((resizing.startH+dy/GRID)*2)/2);
       const room=rooms[resizing.ri];
       onUpdateRoom(room._id,{ dimensions:{ ...room.dimensions, width:nW, length:nH } });
+    } else {
+      canvasRef.current.style.cursor =
+        ri!==-1 && onResize(x,y,ri) ? 'se-resize' : ri!==-1 ? 'grab' : 'default';
     }
   }, [dragging, resizing, roomAt, onResize, rooms, onUpdateRoom]);
 
-  const handleUp   = useCallback(() => { setDragging(null); setResizing(null); }, []);
-  const handleDbl  = useCallback(e => {
+  const handleUp = useCallback(() => { setDragging(null); setResizing(null); }, []);
+
+  // attach global mouseup so drag isn't killed if cursor leaves canvas
+  useEffect(() => {
+    window.addEventListener('mouseup', handleUp);
+    return () => window.removeEventListener('mouseup', handleUp);
+  }, [handleUp]);
+
+  const handleDbl = useCallback(e => {
     const { x,y } = mousePos(e);
     const ri = roomAt(x,y);
     if (ri!==-1) onSelectRoom(ri, true);
@@ -244,7 +243,7 @@ export default function FloorPlan({ house, onSelectRoom, onUpdateRoom, selectedR
 
       <canvas ref={canvasRef} width={size.width} height={size.height}
         onMouseDown={handleDown} onMouseMove={handleMove}
-        onMouseUp={handleUp} onMouseLeave={handleUp}
+        onMouseUp={handleUp}
         onDoubleClick={handleDbl} className="block"/>
 
       {/* Legend */}

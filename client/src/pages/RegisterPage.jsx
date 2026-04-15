@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { passwordStrength } from '../utils/helpers';
 
 const RegisterPage = () => {
   const [form, setForm]       = useState({ name: '', email: '', password: '' });
@@ -27,15 +28,7 @@ const RegisterPage = () => {
     }
   };
 
-  const passwordStrength = () => {
-    const p = form.password;
-    if (!p) return null;
-    if (p.length < 6) return { label: 'Too short', color: 'bg-red-500',  w: 'w-1/4' };
-    if (p.length < 8)  return { label: 'Weak',      color: 'bg-gray-500', w: 'w-2/4' };
-    if (p.length < 12) return { label: 'Good',      color: 'bg-gray-300', w: 'w-3/4' };
-    return { label: 'Strong', color: 'bg-white', w: 'w-full' };
-  };
-  const strength = passwordStrength();
+  const strength = passwordStrength(form.password);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 py-20 relative overflow-hidden">
@@ -151,10 +144,7 @@ const RegisterPage = () => {
                   <div className="h-1 rounded-full bg-gray-800 overflow-hidden">
                     <div className={`h-full rounded-full transition-all duration-300 ${strength.color} ${strength.w}`} />
                   </div>
-                  <p className={`text-xs mt-1 ${
-                    strength.label === 'Strong' ? 'text-white' :
-                    strength.label === 'Good'   ? 'text-gray-300' : 'text-gray-500'
-                  }`}>{strength.label}</p>
+                  <p className={`text-xs mt-1 ${strength.textColor}`}>{strength.label}</p>
                 </div>
               )}
             </div>

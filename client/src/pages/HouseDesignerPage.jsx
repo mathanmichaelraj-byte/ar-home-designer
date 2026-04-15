@@ -6,23 +6,11 @@ import SceneViewer from '../three/SceneViewer';
 import FloorPlan from '../components/FloorPlan';
 import FloorPlan3D from '../components/FloorPlan3D';
 import { furnitureAPI } from '../utils/api';
+import { ROOM_TYPES, FLOOR_OPTIONS, FURNITURE_CATEGORIES } from '../utils/constants';
+import { buildNewObject, getFloorOption } from '../utils/helpers';
 
 /* ── Constants ──────────────────────────────────────────────────────── */
-const ROOM_TYPES = [
-  { value:'living',   label:'Living Room', emoji:'🛋️' },
-  { value:'bedroom',  label:'Bedroom',     emoji:'🛏️' },
-  { value:'office',   label:'Office',      emoji:'💼' },
-  { value:'dining',   label:'Dining Room', emoji:'🍽️' },
-  { value:'kitchen',  label:'Kitchen',     emoji:'🍳' },
-  { value:'bathroom', label:'Bathroom',    emoji:'🚿' },
-  { value:'other',    label:'Other',       emoji:'🏠' },
-];
-const FLOOR_OPTIONS = [
-  { v:1, l:'Ground Floor' },
-  { v:2, l:'1st Floor'    },
-  { v:3, l:'2nd Floor'    },
-  { v:4, l:'3rd Floor'    },
-];
+const FCATS = FURNITURE_CATEGORIES.map(c => c.id);
 const VIEW_MODES = [
   { id:'2d',      label:'2D Plan', icon:(
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -51,7 +39,6 @@ const Ic = {
 };
 
 /* ── House Furniture Panel ──────────────────────────────────────────── */
-const FCATS = ['all','sofa','chair','table','bed','shelf','desk','lamp','cabinet','plant'];
 function HouseFurniturePanel({ onAdd }) {
   const [furniture, setFurniture] = useState([]);
   const [cat, setCat] = useState('all');
@@ -343,7 +330,7 @@ function HouseStats({ house, selectedRoom, onEnter3D }) {
           <p className="text-gray-500 text-xs">
             {selectedRoom.dimensions?.width}×{selectedRoom.dimensions?.length} m
             · {selectedRoom.objects?.length||0} items
-            · {FLOOR_OPTIONS.find(f=>f.v===(selectedRoom.floor||1))?.l}
+            · {getFloorOption(selectedRoom.floor||1)?.l}
           </p>
           <button onClick={onEnter3D}
             className="btn-primary w-full text-xs py-2">
@@ -430,16 +417,7 @@ export default function HouseDesignerPage() {
 
   const handleAddObject = useCallback(async (item) => {
     if (!currentRoom) return;
-    const isCeil = ['ceiling','fan','chandelier'].some(k=>item.name.toLowerCase().includes(k));
-    const newObj = {
-      furnitureId: item._id,
-      name:        item.name,
-      modelUrl:    item.modelUrl,
-      position:    { x:0, y:isCeil?2.5:0, z:0 },
-      rotation:    { x:0, y:0, z:0 },
-      scale:       { x:1, y:1, z:1 },
-      color:       '#cccccc',
-    };
+    const newObj = buildNewObject(item);
     await updateRoom(currentRoom._id, { objects:[...(currentRoom.objects||[]), newObj] });
   }, [currentRoom, updateRoom]);
 
@@ -608,7 +586,7 @@ export default function HouseDesignerPage() {
                                 ${sidebarTab===tab?'text-white border-b border-white':'text-gray-700 hover:text-gray-400'}`}>
                     {tab}
                     {tab==='properties'&&selObjIdx!==null&&(
-                      <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"/>
+                      <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-white inline-block"/>
                     )}
                   </button>
                 ))}

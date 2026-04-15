@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { projectsAPI } from '../utils/api';
+import { buildNewObject } from '../utils/helpers';
 
 const ProjectContext = createContext(null);
 
@@ -49,28 +50,13 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [currentProject]);
 
-  const CEILING_KEYWORDS = ['ceiling', 'fan', 'chandelier', 'pendant'];
-
-const addObject = (furnitureItem) => {
-  const isCeiling = CEILING_KEYWORDS.some(k =>
-    furnitureItem.name.toLowerCase().includes(k)
-  );
-
-  const obj = {
-    furnitureId: furnitureItem._id,
-    name: furnitureItem.name,
-    modelUrl: furnitureItem.modelUrl,
-    position: { x: 0, y: isCeiling ? 2.6 : 0, z: 0 },
-    rotation: { x: 0, y: 0, z: 0 },
-    scale: { x: 1, y: 1, z: 1 },
-    color: '#cccccc',
+  const addObject = (furnitureItem) => {
+    const obj = buildNewObject(furnitureItem);
+    setCurrentProject((prev) => ({
+      ...prev,
+      objects: [...(prev?.objects || []), obj],
+    }));
   };
-
-  setCurrentProject((prev) => ({
-    ...prev,
-    objects: [...(prev?.objects || []), obj],
-  }));
-};
 
 
   const updateObject = (index, updates) => {

@@ -4,6 +4,7 @@ import { useProject } from '../context/ProjectContext';
 import FurniturePanel from '../components/FurniturePanel';
 import SceneViewer from '../three/SceneViewer';
 import { projectsAPI } from '../utils/api';
+import { AI_STYLES } from '../utils/constants';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Icons
@@ -22,14 +23,7 @@ const Icon = {
 // ─────────────────────────────────────────────────────────────────────────────
 // AI Style picker modal
 // ─────────────────────────────────────────────────────────────────────────────
-const STYLES = [
-  { style: 'living',   emoji: '🛋️', label: 'Living Room' },
-  { style: 'bedroom',  emoji: '🛏️', label: 'Bedroom' },
-  { style: 'office',   emoji: '💼', label: 'Office' },
-  { style: 'dining',   emoji: '🍽️', label: 'Dining Room' },
-  { style: 'kitchen',  emoji: '🍳', label: 'Kitchen' },
-  { style: 'bathroom', emoji: '🚿', label: 'Bathroom' },
-];
+const STYLES = AI_STYLES;
 
 const StyleModal = ({ onSelect, onClose }) => (
   <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center px-4">
@@ -550,6 +544,7 @@ const DesignerPage = () => {
             selectedIdx={selectedIdx}
             onSelect={handleObjectSelect}
             onUpdateObject={updateObject}
+            onDeleteObject={(idx) => { removeObject(idx); setSelectedIdx(null); setSidebarTab('furniture'); }}
           />
           <RoomSettings project={currentProject} onSave={saveProject} />
         </div>

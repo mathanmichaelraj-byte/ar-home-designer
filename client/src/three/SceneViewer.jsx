@@ -2,17 +2,10 @@ import React, { Suspense, useRef, useState, useEffect, useCallback, useMemo } fr
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, TransformControls, Html } from '@react-three/drei';
 import { useGLTF } from '@react-three/drei';
+import { SCENE } from '../utils/constants';
+import { round } from '../utils/helpers';
 
-/* ── Real room colours ──────────────────────────────────────────────── */
-const ROOM = {
-  floorColor:   '#2a2a2a',   // dark concrete
-  wallColor:    '#1a1a1a',   // near black
-  ceilingColor: '#111111',   // black
-  gridCell:     '#333333',
-  gridSection:  '#444444',
-  selectionCol: '#ffffff',   // white selection
-  bg:           '#0d0d0d',   // deep black ambient
-};
+const ROOM = SCENE;
 
 /* ── Room geometry ──────────────────────────────────────────────────── */
 function Room({ dimensions, wallColor }) {
@@ -92,9 +85,9 @@ function FurnitureModel({ object, index, isSelected, onSelect, onDelete, orbitRe
     if (!groupRef.current) return;
     const { position:p, rotation:r, scale:s } = groupRef.current;
     object._onUpdate?.(index, {
-      position:{ x:+p.x.toFixed(3), y:+p.y.toFixed(3), z:+p.z.toFixed(3) },
-      rotation:{ x:+r.x.toFixed(3), y:+r.y.toFixed(3), z:+r.z.toFixed(3) },
-      scale:   { x:+s.x.toFixed(3), y:+s.y.toFixed(3), z:+s.z.toFixed(3) },
+      position:{ x:round(p.x), y:round(p.y), z:round(p.z) },
+      rotation:{ x:round(r.x), y:round(r.y), z:round(r.z) },
+      scale:   { x:round(s.x), y:round(s.y), z:round(s.z) },
     });
   }, [index, object]);
 
@@ -138,9 +131,9 @@ function FurnitureBox({ object, index, isSelected, onSelect, onDelete, orbitRef,
     if (!groupRef.current) return;
     const { position:p, rotation:r, scale:s } = groupRef.current;
     object._onUpdate?.(index, {
-      position:{ x:+p.x.toFixed(3), y:+p.y.toFixed(3), z:+p.z.toFixed(3) },
-      rotation:{ x:+r.x.toFixed(3), y:+r.y.toFixed(3), z:+r.z.toFixed(3) },
-      scale:   { x:+s.x.toFixed(3), y:+s.y.toFixed(3), z:+s.z.toFixed(3) },
+      position:{ x:round(p.x), y:round(p.y), z:round(p.z) },
+      rotation:{ x:round(r.x), y:round(r.y), z:round(r.z) },
+      scale:   { x:round(s.x), y:round(s.y), z:round(s.z) },
     });
   }, [index, object]);
 
