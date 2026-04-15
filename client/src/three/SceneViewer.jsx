@@ -179,13 +179,9 @@ function FurnitureBox({ object, index, isSelected, onSelect, onDelete, orbitRef,
 /* ── Mode toolbar button ─────────────────────────────────────────────── */
 const MBtn = ({ active, onClick, title, key2, icon }) => (
   <button onClick={onClick} title={`${title} (${key2})`}
-    style={{all:'unset'}}
     className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg text-xs
-                font-medium transition-all duration-150 select-none cursor-pointer
-                ${active
-                  ? 'bg-black text-white'
-                  : 'text-black hover:bg-gray-200'}
-                focus:outline-none focus:ring-2 focus:ring-gray-400`}>
+                font-medium transition-all duration-150 select-none cursor-pointer border-0
+                ${active ? 'bg-black text-white' : 'bg-transparent text-black hover:bg-gray-200'}`}>
     <span className="text-base leading-none">{icon}</span>
     <span className="text-[10px] leading-none font-mono">{key2}</span>
   </button>
@@ -285,22 +281,22 @@ export default function SceneViewer({ project, selectedIdx, onSelect, onUpdateOb
       {/* ── Bottom hints ──────────────────────────────────────── */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-none
                       flex items-center gap-3 px-4 py-2 rounded-full
-                      bg-black/40 backdrop-blur-sm border border-black/10">
-        <span className="text-[11px] text-white/60">
-          <kbd className="font-mono bg-black/20 px-1.5 py-0.5 rounded text-[10px]">LMB</kbd> orbit
+                      bg-black/70 backdrop-blur-sm border border-white/10">
+        <span className="text-[11px] text-white">
+          <kbd className="font-mono bg-white/20 px-1.5 py-0.5 rounded text-[10px] text-white">LMB</kbd> orbit
         </span>
-        <span className="text-white/25">·</span>
-        <span className="text-[11px] text-white/60">
-          <kbd className="font-mono bg-black/20 px-1.5 py-0.5 rounded text-[10px]">Scroll</kbd> zoom
+        <span className="text-white/40">·</span>
+        <span className="text-[11px] text-white">
+          <kbd className="font-mono bg-white/20 px-1.5 py-0.5 rounded text-[10px] text-white">Scroll</kbd> zoom
         </span>
         {selectedIdx!==null && (
           <>
-            <span className="text-white/25">·</span>
-            <span className="text-[11px] text-white/60">
-              <kbd className="font-mono bg-black/15 px-1 py-0.5 rounded text-[10px]">W</kbd> Move &nbsp;
-              <kbd className="font-mono bg-black/15 px-1 py-0.5 rounded text-[10px]">E</kbd> Rotate &nbsp;
-              <kbd className="font-mono bg-black/15 px-1 py-0.5 rounded text-[10px]">R</kbd> Scale &nbsp;
-              <kbd className="font-mono bg-black/15 px-1 py-0.5 rounded text-[10px]">Del</kbd> Delete
+            <span className="text-white/40">·</span>
+            <span className="text-[11px] text-white">
+              <kbd className="font-mono bg-white/20 px-1 py-0.5 rounded text-[10px] text-white">W</kbd> Move &nbsp;
+              <kbd className="font-mono bg-white/20 px-1 py-0.5 rounded text-[10px] text-white">E</kbd> Rotate &nbsp;
+              <kbd className="font-mono bg-white/20 px-1 py-0.5 rounded text-[10px] text-white">R</kbd> Scale &nbsp;
+              <kbd className="font-mono bg-white/20 px-1 py-0.5 rounded text-[10px] text-white">Del</kbd> Delete
             </span>
           </>
         )}
