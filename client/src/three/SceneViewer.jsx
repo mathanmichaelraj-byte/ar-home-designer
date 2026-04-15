@@ -75,7 +75,7 @@ function SelectionOverlay({ height, onDelete }) {
 }
 
 /* ── GLB furniture model ────────────────────────────────────────────── */
-function FurnitureModel({ object, index, isSelected, onSelect, onDelete, orbitRef, transformMode }) {
+function FurnitureModel({ object, index, isSelected, onSelect, orbitRef, transformMode }) {
   const groupRef = useRef();
   const url = object.modelUrl?.replace('/assets/models/', '/models/');
   const { scene } = useGLTF(url);
@@ -115,7 +115,7 @@ function FurnitureModel({ object, index, isSelected, onSelect, onDelete, orbitRe
             onChange={onTransform}/>
           <group position={[object.position?.x||0, object.position?.y||0, object.position?.z||0]}>
             <SelectionOverlay height={(object.scale?.y||1)*1.2}
-              onDelete={() => onDelete(index)}/>
+              onDelete={() => object._onDelete?.(index)}/>
           </group>
         </>
       )}
@@ -124,7 +124,7 @@ function FurnitureModel({ object, index, isSelected, onSelect, onDelete, orbitRe
 }
 
 /* ── Placeholder box (no GLB) ───────────────────────────────────────── */
-function FurnitureBox({ object, index, isSelected, onSelect, onDelete, orbitRef, transformMode }) {
+function FurnitureBox({ object, index, isSelected, onSelect, orbitRef, transformMode }) {
   const groupRef = useRef();
 
   const onTransform = useCallback(() => {
@@ -161,7 +161,7 @@ function FurnitureBox({ object, index, isSelected, onSelect, onDelete, orbitRef,
             onMouseUp={()   => { if(orbitRef.current) orbitRef.current.enabled=true;  }}
             onChange={onTransform}/>
           <group position={[object.position?.x||0, object.position?.y||0, object.position?.z||0]}>
-            <SelectionOverlay height={0.9} onDelete={() => onDelete(index)}/>
+            <SelectionOverlay height={0.9} onDelete={() => object._onDelete?.(index)}/>
           </group>
         </>
       )}
@@ -204,8 +204,11 @@ export default function SceneViewer({ project, selectedIdx, onSelect, onUpdateOb
 
   useEffect(() => { if (selectedIdx!==null) setMode('translate'); }, [selectedIdx]);
 
-  // Inject update callback into objects (avoids prop drilling into TransformControls)
-  const enrichedObjects = useMemo(() => objects.map(o => ({ ...o, _onUpdate: onUpdateObject })), [objects, onUpdateObject]);
+  // Inject callbacks into objects so they're always fresh inside TransformControls closures
+  const enrichedObjects = useMemo(
+    () => objects.map(o => ({ ...o, _onUpdate: onUpdateObject, _onDelete: onDeleteObject })),
+    [objects, onUpdateObject, onDeleteObject]
+  );
 
   const { width:W=5, length:L=5, height:H=2.8 } = roomDimensions||{};
   const camPos = [W/2+W*0.8, H*1.4, L+L*0.5];
@@ -230,10 +233,10 @@ export default function SceneViewer({ project, selectedIdx, onSelect, onUpdateOb
             obj.modelUrl
               ? <FurnitureModel key={i} object={obj} index={i}
                   isSelected={selectedIdx===i} onSelect={onSelect}
-                  onDelete={onDeleteObject} orbitRef={orbitRef} transformMode={mode}/>
+                  orbitRef={orbitRef} transformMode={mode}/>
               : <FurnitureBox key={i} object={obj} index={i}
                   isSelected={selectedIdx===i} onSelect={onSelect}
-                  onDelete={onDeleteObject} orbitRef={orbitRef} transformMode={mode}/>
+                  orbitRef={orbitRef} transformMode={mode}/>
           )}
         </Suspense>
 
