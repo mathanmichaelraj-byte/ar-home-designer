@@ -133,7 +133,7 @@ const PropertiesPanel = ({ objects = [], selectedIndex, onSelect, updateObject, 
                             }`}
               >
                 <div className="flex items-center gap-2 overflow-hidden">
-                  <span className={selectedIndex === i ? 'text-amber-400' : 'text-gray-700'}>
+                <span className={selectedIndex === i ? 'text-white' : 'text-gray-700'}>
                     {Icon.dot}
                   </span>
                   <span className="text-xs truncate">{obj.name}</span>
@@ -520,7 +520,7 @@ const DesignerPage = () => {
               >
                 {tab}
                 {tab === 'properties' && selectedIdx !== null && (
-                  <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                  <span className="ml-1.5 w-1.5 h-1.5 rounded-full bg-white inline-block" />
                 )}
               </button>
             ))}

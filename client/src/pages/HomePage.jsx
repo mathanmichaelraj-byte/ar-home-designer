@@ -95,7 +95,7 @@ const HomePage = () => {
           <div className="animate-fade-up inline-flex items-center gap-2.5 mb-8
                           border border-gray-800 rounded-full px-4 py-2
                           bg-gray-900/60 backdrop-blur-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse-slow" />
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse-slow" />
             <span className="text-xs font-mono text-gray-400 tracking-wider">WebXR Augmented Reality</span>
           </div>
 

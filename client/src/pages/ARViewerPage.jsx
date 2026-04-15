@@ -40,7 +40,7 @@ const ARViewerPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gray-700 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
@@ -56,7 +56,7 @@ const ARViewerPage = () => {
         </p>
 
         {arSupported === false && (
-          <div className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-sm px-4 py-3 rounded-xl mb-6">
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-xl mb-6">
             ⚠️ AR is not supported on this device or browser. Use Chrome on an ARCore-compatible Android, or Safari on iOS 15+ with a WebXR polyfill.
           </div>
         )}
@@ -83,7 +83,7 @@ const ARViewerPage = () => {
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {currentProject.objects.map((obj, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm text-gray-400">
-                  <div className="w-2 h-2 rounded-full bg-brand-500/60 shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-white/40 shrink-0" />
                   {obj.name}
                 </div>
               ))}

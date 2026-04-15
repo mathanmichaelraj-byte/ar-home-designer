@@ -18,10 +18,10 @@ module.exports = {
         'gray-100': '#e5e5e5',
         'gray-50':  '#f5f5f5',
         white:    '#ffffff',
-        accent:   '#e8d5b7',   // warm gold — premium highlight
-        'accent-dim': '#b8a88a',
+        accent:   '#ffffff',   // white — primary highlight
+        'accent-dim': '#999999',
         danger:   '#ef4444',
-        success:  '#22c55e',
+        success:  '#ffffff',
       },
       fontFamily: {
         sans:    ['Inter', 'DM Sans', 'sans-serif'],
@@ -29,9 +29,9 @@ module.exports = {
         mono:    ['JetBrains Mono', 'monospace'],
       },
       boxShadow: {
-        'glow-sm': '0 0 12px rgba(232,213,183,0.15)',
-        glow:      '0 0 28px rgba(232,213,183,0.22)',
-        'glow-lg': '0 0 50px rgba(232,213,183,0.18)',
+        'glow-sm': '0 0 12px rgba(255,255,255,0.08)',
+        glow:      '0 0 28px rgba(255,255,255,0.12)',
+        'glow-lg': '0 0 50px rgba(255,255,255,0.10)',
         'card':    '0 4px 24px rgba(0,0,0,0.6)',
         'card-hover': '0 8px 40px rgba(0,0,0,0.8)',
       },

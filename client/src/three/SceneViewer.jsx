@@ -5,13 +5,13 @@ import { useGLTF } from '@react-three/drei';
 
 /* ── Real room colours ──────────────────────────────────────────────── */
 const ROOM = {
-  floorColor:   '#c19a6b',   // warm oak wood
-  wallColor:    '#f0ebe3',   // cream white
-  ceilingColor: '#ece8e2',   // off-white
-  gridCell:     '#d4cbbf',
-  gridSection:  '#b0a898',
-  selectionCol: '#e8d5b7',   // warm gold
-  bg:           '#2d2d2d',   // warm grey ambient
+  floorColor:   '#2a2a2a',   // dark concrete
+  wallColor:    '#1a1a1a',   // near black
+  ceilingColor: '#111111',   // black
+  gridCell:     '#333333',
+  gridSection:  '#444444',
+  selectionCol: '#ffffff',   // white selection
+  bg:           '#0d0d0d',   // deep black ambient
 };
 
 /* ── Room geometry ──────────────────────────────────────────────────── */
@@ -154,9 +154,9 @@ function FurnitureBox({ object, index, isSelected, onSelect, onDelete, orbitRef,
         <mesh castShadow receiveShadow>
           <boxGeometry args={[0.8, 0.8, 0.8]}/>
           <meshStandardMaterial
-            color={isSelected ? '#c8b89a' : '#b0a080'}
+            color={isSelected ? '#555555' : '#333333'}
             emissive={isSelected ? ROOM.selectionCol : '#000'}
-            emissiveIntensity={isSelected ? 0.12 : 0}
+            emissiveIntensity={isSelected ? 0.08 : 0}
             roughness={0.75} metalness={0.08}/>
         </mesh>
       </group>
@@ -183,10 +183,10 @@ const MBtn = ({ active, onClick, title, key2, icon }) => (
     className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg text-xs
                 font-medium transition-all duration-150 select-none cursor-pointer
                 ${active 
-  ? 'bg-black-600 text-white' 
-  : 'text-gray-700 hover:bg-gray-100 hover:text-black'}
+  ? 'bg-white text-black' 
+  : 'text-gray-400 hover:bg-gray-100 hover:text-black'}
 transition-colors duration-150 rounded-md
-focus:outline-none focus:ring-2 focus:ring-black-400`}>
+focus:outline-none focus:ring-2 focus:ring-gray-400`}>
     <span className="text-base leading-none">{icon}</span>
     <span className="text-[10px] leading-none font-mono">{key2}</span>
   </button>
@@ -228,12 +228,11 @@ export default function SceneViewer({ project, selectedIdx, onSelect, onUpdateOb
       <Canvas shadows camera={{position:camPos, fov:50}}
         style={{background: ROOM.bg}} onPointerMissed={() => onSelect(null)}>
 
-        {/* Warm daylight */}
-        <ambientLight intensity={0.9} color="#fff8f0"/>
-        <directionalLight position={[W/2+4, H*2, L/2+4]} intensity={1.8}
-          castShadow shadow-mapSize={[2048,2048]} color="#fff5e8"/>
-        <directionalLight position={[-4, H+2, -3]} intensity={0.4} color="#c8d4e8"/>
-        <pointLight position={[W/2, H-0.3, L/2]} intensity={0.6} color="#ffe8c8" distance={12}/>
+        <ambientLight intensity={1.0} color="#ffffff"/>
+        <directionalLight position={[W/2+4, H*2, L/2+4]} intensity={1.5}
+          castShadow shadow-mapSize={[2048,2048]} color="#ffffff"/>
+        <directionalLight position={[-4, H+2, -3]} intensity={0.3} color="#cccccc"/>
+        <pointLight position={[W/2, H-0.3, L/2]} intensity={0.4} color="#ffffff" distance={12}/>
 
         <Suspense fallback={null}>
           <Environment preset="apartment"/>
@@ -300,7 +299,7 @@ export default function SceneViewer({ project, selectedIdx, onSelect, onUpdateOb
         {selectedIdx!==null && (
           <>
             <span className="text-white/25">·</span>
-            <span className="text-[11px] text-amber-700/80">
+            <span className="text-[11px] text-white/60">
               <kbd className="font-mono bg-black/15 px-1 py-0.5 rounded text-[10px]">W</kbd> Move &nbsp;
               <kbd className="font-mono bg-black/15 px-1 py-0.5 rounded text-[10px]">E</kbd> Rotate &nbsp;
               <kbd className="font-mono bg-black/15 px-1 py-0.5 rounded text-[10px]">R</kbd> Scale &nbsp;

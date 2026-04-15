@@ -49,7 +49,7 @@ const ProfilePage = () => {
                               select-none">
                 {initials}
               </div>
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-green-500
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white
                               border-2 border-gray-900" />
             </div>
 
