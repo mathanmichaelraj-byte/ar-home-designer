@@ -8,14 +8,15 @@ export const DEFAULT_ROOM = { width: 5, length: 5, height: 2.8 };
 
 // ─── 3D scene ─────────────────────────────────────────────────────────────────
 export const SCENE = {
-  bg:           '#0d0d0d',
-  floorColor:   '#2a2a2a',
-  wallColor:    '#1a1a1a',
-  ceilingColor: '#111111',
-  gridCell:     '#333333',
-  gridSection:  '#444444',
-  selectionCol: '#ffffff',
-  floorH:       3.5,   // metres per floor in 3D house view
+  bg:           '#d4c5b0',   // warm ambient sky
+  floorColor:   '#c8a96e',   // oak hardwood
+  floorRough:   0.65,
+  wallColor:    '#f5f0e8',   // warm off-white plaster
+  ceilingColor: '#faf7f2',   // bright ceiling
+  gridCell:     '#b8a88880', // subtle warm grid
+  gridSection:  '#a09070a0',
+  selectionCol: '#2563eb',   // vivid blue selection
+  floorH:       3.5,         // metres per floor in 3D house view
 };
 
 // ─── Room types ───────────────────────────────────────────────────────────────
