@@ -62,48 +62,51 @@ const STYLE_CONFIGS = {
 
 /**
  * Calculate position based on anchor type and room dimensions
- * All positions are returned in room-origin space (0→W, 0→L)
- * to match the Three.js scene coordinate system.
  */
 const getPosition = (anchor, index, total, width, length, dimensions) => {
   const hw = width / 2;
   const hl = length / 2;
   const itemW = dimensions?.width || 0.8;
   const itemD = dimensions?.depth || 0.8;
-  const wallGap = 0.1;
+  const itemH = dimensions?.height || 0.8;
   const y = 0;
-
-  // Compute centered position (relative to room center = 0,0)
-  let cx = 0, cz = 0;
+  const wallGap = 0.1;
 
   switch (anchor) {
     case 'center':
-      cx = 0; cz = 0;
-      break;
+      return { x: 0, y, z: 0 };
 
     case 'front':
-      cx = (index - (total - 1) / 2) * (itemW + 0.2);
-      cz = hl * 0.3;
-      break;
+      return {
+        x: (index - (total - 1) / 2) * (itemW + 0.2),
+        y,
+        z: hl * 0.3,
+      };
 
     case 'back':
-      cx = (index - (total - 1) / 2) * (itemW + 0.2);
-      cz = -(hl - itemD / 2 - wallGap);
-      break;
+      return {
+        x: (index - (total - 1) / 2) * (itemW + 0.2),
+        y,
+        z: -(hl - itemD / 2 - wallGap),
+      };
 
     case 'wall': {
       const spread = width * 0.7;
       const step = total > 1 ? spread / (total - 1) : 0;
-      cx = (-spread / 2) + index * step;
-      cz = -(hl - itemD / 2 - wallGap);
-      break;
+      return {
+        x: +((-spread / 2) + index * step).toFixed(3),
+        y,
+        z: -(hl - itemD / 2 - wallGap),
+      };
     }
 
     case 'side': {
       const side = index % 2 === 0 ? -1 : 1;
-      cx = side * (hw - itemW / 2 - wallGap);
-      cz = (index < 2 ? -1 : 1) * hl * 0.3;
-      break;
+      return {
+        x: side * (hw - itemW / 2 - wallGap),
+        y,
+        z: (index < 2 ? -1 : 1) * hl * 0.3,
+      };
     }
 
     case 'corner': {
@@ -114,66 +117,70 @@ const getPosition = (anchor, index, total, width, length, dimensions) => {
         { x:  (hw - itemW / 2 - wallGap), z:  (hl - itemD / 2 - wallGap) },
       ];
       const c = corners[index % 4];
-      cx = c.x; cz = c.z;
-      break;
+      return { x: +c.x.toFixed(3), y, z: +c.z.toFixed(3) };
     }
 
     case 'beside':
-      cx = -(hw - itemW / 2 - wallGap) + index * (itemW + 0.2);
-      cz = -(hl - itemD / 2 - wallGap) + 0.9;
-      break;
+      return {
+        x: -(hw - itemW / 2 - wallGap) + index * (itemW + 0.2),
+        y,
+        z: -(hl - itemD / 2 - wallGap) + 0.9,
+      };
 
     case 'around': {
+      // Chairs evenly around a center table
       const radius = Math.max(itemW, itemD) * 1.2 + 0.4;
       const angle = (index / total) * 2 * Math.PI;
-      cx = Math.cos(angle) * radius;
-      cz = Math.sin(angle) * radius;
-      break;
+      return {
+        x: +(Math.cos(angle) * radius).toFixed(3),
+        y,
+        z: +(Math.sin(angle) * radius).toFixed(3),
+      };
     }
 
     case 'island':
-      cx = (index - (total - 1) / 2) * (itemW + 0.2);
-      cz = hl * 0.35;
-      break;
+      return {
+        x: (index - (total - 1) / 2) * (itemW + 0.2),
+        y,
+        z: hl * 0.35,
+      };
 
     case 'window':
-      cx = (index - (total - 1) / 2) * (itemW + 0.3);
-      cz = -(hl - itemD / 2 - wallGap);
-      break;
+      return {
+        x: (index - (total - 1) / 2) * (itemW + 0.3),
+        y,
+        z: -(hl - itemD / 2 - wallGap),
+      };
 
     case 'desk':
-      cx = (index - (total - 1) / 2) * (itemW + 0.1);
-      cz = -(hl - itemD / 2 - wallGap) + itemD + 0.6;
-      break;
+      return {
+        x: (index - (total - 1) / 2) * (itemW + 0.1),
+        y,
+        z: -(hl - itemD / 2 - wallGap) + itemD + 0.6,
+      };
 
     default:
-      cx = index * (itemW + 0.2) - ((total - 1) * (itemW + 0.2)) / 2;
-      cz = 0;
+      return {
+        x: +(index * (itemW + 0.2) - ((total - 1) * (itemW + 0.2)) / 2).toFixed(3),
+        y,
+        z: 0,
+      };
   }
-
-  // ✅ Offset from room-center coords → room-origin coords (matching Three.js scene)
-  return {
-    x: +(cx + hw).toFixed(3),
-    y,
-    z: +(cz + hl).toFixed(3),
-  };
 };
 
 /**
  * Get rotation so furniture faces center of room
  */
-const getFacingRotation = (position, anchor, width) => {
+const getFacingRotation = (position, anchor) => {
   switch (anchor) {
     case 'back':
     case 'wall':
     case 'window':
-      return { x: 0, y: Math.PI, z: 0 };
+      return { x: 0, y: Math.PI, z: 0 }; // Face into room
     case 'side':
-      // position.x is now in room-origin space, compare against room center
-      return { x: 0, y: position.x > (width / 2) ? -Math.PI / 2 : Math.PI / 2, z: 0 };
+      return { x: 0, y: position.x > 0 ? -Math.PI / 2 : Math.PI / 2, z: 0 };
     case 'around': {
-      // atan2 from room center, not origin
-      const angle = Math.atan2(position.x - width / 2, position.z) + Math.PI;
+      const angle = Math.atan2(position.x, position.z) + Math.PI;
       return { x: 0, y: +angle.toFixed(3), z: 0 };
     }
     default:
@@ -216,7 +223,7 @@ exports.suggestLayout = ({ width = 5, length = 5, style = 'living', availableFur
       }
 
       const position = getPosition(zone.anchor, i, count, width, length, item.dimensions);
-      const rotation = getFacingRotation(position, zone.anchor, width);
+      const rotation = getFacingRotation(position, zone.anchor);
       suggestions.push({
         furnitureId: item._id,
         name: item.name,
