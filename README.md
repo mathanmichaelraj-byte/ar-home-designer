@@ -1,435 +1,314 @@
-# InteriorAR
+# InteriorAR — AI-Powered AR Interior Designer
 
-> Design rooms and full houses in 3D. Place furniture. Preview everything in Augmented Reality — before you buy a single piece.
+> Design rooms in 2D, visualise them in 3D, and see furniture placed in your real space via Augmented Reality — all in the browser.
 
-A full-stack web platform that takes you from a blank canvas to a furnished, AR-ready room in four steps. No specialist software, no design experience required.
-
----
-
-## Table of Contents
-
-1. [Overview](#overview)
-2. [Live Demo](#live-demo)
-3. [Features](#features)
-4. [Tech Stack](#tech-stack)
-5. [Project Structure](#project-structure)
-6. [Getting Started](#getting-started)
-7. [Environment Variables](#environment-variables)
-8. [Assets Setup](#assets-setup)
-9. [Shared Utilities](#shared-utilities)
-10. [API Reference](#api-reference)
-11. [3D Scene](#3d-scene)
-12. [UI Theme](#ui-theme)
-13. [AR Compatibility](#ar-compatibility)
-14. [AI Layout System](#ai-layout-system)
-15. [Known Limitations](#known-limitations)
-16. [License](#license)
+[![Deploy](https://img.shields.io/badge/deploy-vercel-black?logo=vercel)](https://vercel.com)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 ---
 
-## Overview
+## ✨ Features
 
-InteriorAR solves a common problem in interior design: you cannot visualise how furniture will look and fit in a real space before purchasing it. The platform provides a complete design workflow:
+| Feature | Description |
+|---|---|
+| **2D Floor Plan** | Smooth canvas-based room layout editor. Drag, resize and snap rooms to grid with no lag. |
+| **Per-Floor Design** | Switch to Floor Plan view to design Ground Floor, 1st Floor etc. individually — with wall indicators, door arcs and area totals. |
+| **3D House View** | React Three Fiber 3D model of the entire house. All floors stacked with interactive room boxes — click, orbit and zoom. |
+| **3D Room Editor** | Furniture placement in a realistic 3D room (warm wood floor, cream walls). Move / Rotate / Scale with gizmos via W / E / R keys. One-click delete on any selected model. |
+| **AR Preview** | WebXR-based Augmented Reality — point your phone camera and see furniture anchored to real surfaces. |
+| **Furniture Library** | 70+ GLB 3D models (sofas, beds, lights, plants…) with PNG thumbnails, category filters and live search. |
+| **AI Room Suggestions** | AI-generated furniture layouts based on room type and dimensions. |
+| **Auto-Save** | Debounced background saving — no lost work. |
+| **Multi-Floor Houses** | Create houses with rooms on Ground / 1st / 2nd / 3rd floor. |
+| **JWT Auth** | Secure registration, login and protected routes. |
+
+---
+
+## 🏗️ Architecture
 
 ```
-Draw room  →  Place 3D furniture  →  Preview in 3D  →  View in AR
-```
-
-Everything runs in the browser. No app install, no plugins.
-
----
-
-## Live Demo
-
-The frontend is deployed on **Vercel** and the backend on **Render**.
-
-> Add your deployment URLs here once live.
-
----
-
-## Features
-
-### Room Designer
-- Set exact room dimensions (width, length, height in metres)
-- Choose wall colour with a live colour picker
-- Place, move, rotate, and scale 70+ 3D furniture models
-- Keyboard shortcuts: **W** Move · **E** Rotate · **R** Scale · **Del** Delete · **Esc** Deselect
-- Transform toolbar appears only when a model is selected — clean viewport otherwise
-- Object name tag and Remove button float above the selected item in 3D space
-- Object count badge in the top-right corner
-- Empty room hint guides new users to add furniture
-- AI layout suggestions for 6 room styles (living, bedroom, office, dining, kitchen, bathroom)
-- Save, rename, and manage multiple projects
-- Share any design via a public link
-
-### House Designer
-- Create a multi-room, multi-floor house
-- **2D Floor Plan** — canvas-based drag-to-move and corner-resize per room, snapped to grid
-- **3D House View** — stacked multi-floor 3D visualisation, click to select, double-click to edit
-- Import an existing Room Designer project as a room inside a house
-- Per-room 3D editing with the full furniture panel and properties panel
-
-### 3D Viewport (SceneViewer)
-- Warm, realistic interior scene: oak hardwood floor, plaster walls, bright ceiling
-- Skirting boards and ceiling cornice for architectural detail
-- Natural daylight lighting rig: sun from the right, soft fill from the left, warm ceiling and floor bounce
-- Contact shadows for a grounded, realistic feel
-- `apartment` environment map for accurate reflections on furniture
-- Vivid blue wireframe selection highlight
-- Orbit, zoom, and pan with OrbitControls
-
-### Augmented Reality
-- WebXR `immersive-ar` + `hit-test` — place furniture on real surfaces via camera
-- Compatibility check on page load with a clear message on unsupported devices
-
-### General
-- JWT authentication (register, login, profile)
-- Auto-save — changes are persisted continuously, no manual save required
-- Fully responsive — works on desktop and mobile browsers
-
----
-
-## Tech Stack
-
-| Layer      | Technology                                      |
-|------------|-------------------------------------------------|
-| Frontend   | React 18, Tailwind CSS                          |
-| 3D Engine  | Three.js, @react-three/fiber, @react-three/drei |
-| AR         | WebXR (immersive-ar + hit-test)                 |
-| Backend    | Node.js, Express.js                             |
-| Database   | MongoDB, Mongoose                               |
-| Auth       | JWT (HS256, 7-day expiry)                       |
-| 3D Assets  | Kenney Furniture Kit (GLB format)               |
-| Deployment | Vercel (frontend), Render (backend)             |
-
----
-
-## Project Structure
-
-```
-ar-interior-designer/
-├── client/                          # React application
+ar_home_designer/
+├── client/                  # React frontend
 │   ├── public/
-│   │   ├── models/                  # GLB furniture models  (not tracked in git)
-│   │   └── thumbnails/              # PNG preview images    (not tracked in git)
+│   │   ├── models/          # 70+ GLB furniture models
+│   │   └── thumbnails/      # PNG thumbnails for sidebar
 │   └── src/
-│       ├── ar/
-│       │   ├── ARManager.js         # WebXR session bootstrap
-│       │   └── ARScene.js           # Three.js AR scene integration
 │       ├── components/
-│       │   ├── FloorPlan.jsx        # 2D canvas floor plan (drag, resize, grid snap)
-│       │   ├── FloorPlan3D.jsx      # 3D stacked house view
-│       │   ├── FurniturePanel.jsx   # Searchable furniture grid with category filters
-│       │   ├── FurnitureSidebar.jsx # Alternative sidebar furniture browser
-│       │   ├── Navbar.jsx           # Top navigation with Projects dropdown
-│       │   ├── ProjectCard.jsx      # Dashboard project card with hover actions
-│       │   └── ProtectedRoute.jsx   # JWT-gated route wrapper
+│       │   ├── FloorPlan.jsx       # 2D all-floors overview (smooth drag via RAF)
+│       │   ├── FloorDesign2D.jsx   # Per-floor detailed design canvas
+│       │   ├── FloorPlan3D.jsx     # 3D multi-floor house view (R3F)
+│       │   ├── FurniturePanel.jsx  # Furniture catalog sidebar
+│       │   ├── Navbar.jsx
+│       │   └── ProjectCard.jsx
 │       ├── context/
-│       │   ├── AuthContext.jsx      # User auth state + login/register/logout
-│       │   ├── HouseContext.jsx     # House CRUD + room management
-│       │   └── ProjectContext.jsx   # Room project CRUD + object management
+│       │   ├── AuthContext.jsx
+│       │   ├── ProjectContext.jsx
+│       │   └── HouseContext.jsx
 │       ├── hooks/
-│       │   ├── useAutoSave.js       # Debounced auto-save hook
-│       │   └── useFurniture.js      # Furniture fetch with search + category filter
+│       │   ├── useAutoSave.js
+│       │   └── useFurniture.js
 │       ├── pages/
-│       │   ├── ARViewerPage.jsx     # WebXR AR session launcher
-│       │   ├── DashboardPage.jsx    # Room projects grid
-│       │   ├── DesignerPage.jsx     # Full room designer (sidebar + 3D viewport)
-│       │   ├── HomePage.jsx         # Marketing landing page
-│       │   ├── HouseDashboardPage.jsx  # House projects grid
-│       │   ├── HouseDesignerPage.jsx   # House designer (2D plan + 3D house + room editor)
-│       │   ├── LoginPage.jsx        # Sign-in form
-│       │   ├── ProfilePage.jsx      # Account settings + danger zone
-│       │   └── RegisterPage.jsx     # Sign-up form with password strength indicator
+│       │   ├── HomePage.jsx
+│       │   ├── LoginPage.jsx
+│       │   ├── RegisterPage.jsx
+│       │   ├── DashboardPage.jsx
+│       │   ├── HouseDashboardPage.jsx
+│       │   ├── HouseDesignerPage.jsx   # 4-mode designer: overview/floor/3d-house/3d-room
+│       │   ├── DesignerPage.jsx
+│       │   ├── ARViewerPage.jsx
+│       │   └── ProfilePage.jsx
 │       ├── three/
-│       │   ├── SceneViewer.jsx      # Main 3D room viewport (lighting, furniture, controls)
-│       │   └── ThreeScene.js        # Standalone Three.js scene helper
+│       │   └── SceneViewer.jsx     # R3F 3D scene + TransformControls + delete button
 │       └── utils/
-│           ├── api.js               # Axios instance + all API endpoint wrappers
-│           ├── constants.js         # Single source of truth for all static data
-│           └── helpers.js           # Pure utility functions (no side effects)
+│           ├── api.js
+│           ├── constants.js
+│           └── helpers.js
 │
-├── server/                          # Express API
-│   ├── controllers/
-│   │   ├── authController.js        # Register, login, get/update profile
-│   │   ├── furnitureController.js   # Furniture CRUD
-│   │   ├── houseController.js       # House + room CRUD
-│   │   └── projectController.js     # Project CRUD + share + AI suggest
-│   ├── middleware/
-│   │   ├── auth.js                  # JWT verification middleware
-│   │   └── errorHandler.js          # Global error handler
+├── server/                  # Node.js / Express backend
 │   ├── models/
-│   │   ├── Furniture.js             # Furniture schema
-│   │   ├── House.js                 # House + embedded rooms schema
-│   │   ├── Project.js               # Room project + embedded objects schema
-│   │   └── User.js                  # User schema
+│   │   ├── User.js
+│   │   ├── Project.js
+│   │   ├── House.js
+│   │   └── Furniture.js
+│   ├── controllers/
+│   │   ├── authController.js
+│   │   ├── projectController.js
+│   │   ├── houseController.js
+│   │   └── furnitureController.js
 │   ├── routes/
 │   │   ├── auth.js
-│   │   ├── furniture.js
+│   │   ├── projects.js
 │   │   ├── houses.js
-│   │   └── projects.js
-│   └── services/
-│       ├── aiService.js             # Rule-based layout suggestion engine
-│       ├── jwtHelper.js             # Token sign/verify helpers
-│       └── seedData.js              # Furniture seed script
+│   │   └── furniture.js
+│   ├── middleware/
+│   │   ├── auth.js          # JWT verification
+│   │   └── errorHandler.js
+│   ├── services/
+│   │   ├── jwtService.js
+│   │   ├── aiService.js
+│   │   └── seedData.js
+│   └── server.js
 │
-└── docs/
-    └── ARCHITECTURE.md
+├── docker-compose.yml
+├── nginx.conf
+└── README.md
 ```
 
 ---
 
-## Getting Started
+## 🖥️ House Designer — View Modes
+
+The House Designer has **4 view modes** switchable from the toolbar:
+
+### 1. Overview (2D)
+Top-down 2D canvas showing **all rooms across all floors**. Each room is colour-coded by type and has a floor badge (`F1`, `F2`, etc.). Use the floor filter tabs to isolate a single floor.
+
+**Smooth drag fix:** room dragging now uses `useRef` + `requestAnimationFrame` so the canvas redraws at 60fps without any React re-renders. The server API call fires only on `mouseup` — not on every pixel of movement.
+
+### 2. Floor Plan (per-floor)
+Dedicated 2D design canvas for **one floor at a time**. Select floors via `F1 / F2 / F3 / F4` tabs in the toolbar. Features:
+- Wall thickness indicator (inner border on each room)
+- Door arc indicator on the bottom edge of each room
+- Proximity connector lines between adjacent rooms
+- Floor area total in bottom-right
+- Grid toggle
+- "+ Room" shortcut button pre-set to the active floor
+
+### 3. 3D House
+React Three Fiber 3D view of the **entire house** — all floors stacked at 3.5m intervals. Each room is an interactive coloured box. Click to select, double-click to jump to 3D Room editor. Full orbit / zoom / pan.
+
+### 4. Edit Room (3D)
+Full 3D room editor for the **selected room**:
+- Realistic warm colours (cream walls, oak floor, off-white ceiling)
+- `Environment preset="apartment"` for reflections
+- Furniture gizmos: **W** = Move, **E** = Rotate, **R** = Scale
+- **Click any furniture → red Delete button appears** above the model
+- **Del / Backspace** keyboard shortcut to delete selected model
+- Delete also available in the toolbar
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-
-- Node.js >= 18
+- Node.js ≥ 18
 - MongoDB (local or Atlas)
-- Kenney Furniture Kit assets (see [Assets Setup](#assets-setup))
+- npm ≥ 9
 
-### Installation
-
+### 1. Clone
 ```bash
-# Clone the repository
 git clone https://github.com/mathanmichaelraj-byte/ar-home-designer.git
-cd ar-interior-designer
+cd ar-home-designer
+```
 
-# Install server dependencies
+### 2. Server setup
+```bash
 cd server
+cp .env.example .env
+# Edit .env — set MONGO_URI, JWT_SECRET
 npm install
-cp .env.example .env   # then edit .env with your values
-
-# Install client dependencies
-cd ../client
-npm install --legacy-peer-deps
+npm run dev
 ```
 
-### Running the Application
-
+### 3. Client setup
 ```bash
-# Terminal 1 — backend
-cd server
-npm run dev        # starts on http://localhost:5000
-
-# Terminal 2 — frontend
 cd client
-npm start          # starts on http://localhost:3000
+cp .env.example .env
+# Edit .env — set REACT_APP_API_URL
+npm install
+npm start
 ```
 
-### Seed the Database
-
+### 4. Seed furniture data
 ```bash
 cd server
-node services/seedData.js
+npm run seed
 ```
-
-Populates the furniture collection with 70+ items across all categories.
 
 ---
 
-## Environment Variables
+## 🐳 Docker (Production)
 
-Create `server/.env` from the example:
+```bash
+# Build and start all services
+docker compose up --build -d
 
+# Client served by Nginx on port 80
+# API on port 5000
+# MongoDB on port 27017
+```
+
+---
+
+## 🔐 Environment Variables
+
+### Server (`server/.env`)
 ```env
 PORT=5000
-MONGO_URI=mongodb://localhost:27017/ar-interior-designer
-JWT_SECRET=your_secret_key_here
-JWT_EXPIRE=7d
-NODE_ENV=development
-CLIENT_URL=http://localhost:3000
+MONGO_URI=mongodb://localhost:27017/ar_home_designer
+JWT_SECRET=your_secret_key_min_32_chars
+JWT_EXPIRES_IN=7d
+NODE_ENV=production
+CLIENT_URL=https://yourdomain.com
+OPENAI_API_KEY=sk-...        # For AI room suggestions
 ```
 
-For the client, create `client/.env`:
-
+### Client (`client/.env`)
 ```env
 REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_ENV=development
 ```
 
 ---
 
-## Assets Setup
+## 📡 API Reference
 
-3D models and thumbnails are not included in the repository due to file size.
-
-1. Download the **Kenney Furniture Kit** from [kenney.nl/assets/furniture-kit](https://kenney.nl/assets/furniture-kit)
-2. Place GLB model files → `client/public/models/`
-3. Place PNG thumbnail files (NE isometric variant) → `client/public/thumbnails/`
-
-The seed script (`server/services/seedData.js`) references these filenames automatically.
-
----
-
-## Shared Utilities
-
-All constants and helpers used across multiple files live in `client/src/utils/`. **Never redefine these locally — always import from here.**
-
-### `constants.js`
-
-| Export | Description |
-|---|---|
-| `SCENE` | 3D scene colours and config (floor, wall, ceiling, selection, grid) |
-| `ROOM_TYPES` | `[{ value, label, emoji }]` — all room types |
-| `ROOM_EMOJI` | `{ type → emoji }` map |
-| `ROOM_PAL_2D` | Colour palette per room type for the 2D floor plan canvas |
-| `ROOM_PAL_3D` | Colour palette per room type for the 3D house view |
-| `ROOM_BADGE_CLS` | Tailwind badge classes per room type (house dashboard) |
-| `FLOOR_OPTIONS` | `[{ v, l }]` — floor level options |
-| `FLOOR_BADGE_COLORS` | Hex colour per floor index for 2D plan badges |
-| `FURNITURE_CATEGORIES` | `[{ id, label }]` — furniture filter categories |
-| `CEILING_KEYWORDS` | Keywords that identify ceiling-mounted items |
-| `AI_STYLES` | `[{ style, emoji, label }]` — AI room style picker options |
-| `ERRORS` | Standard error message strings |
-| `GRID_SIZE`, `MIN_ROOM_SIZE`, `G2M` | Canvas and geometry constants |
-
-### `helpers.js`
-
-| Function | Signature | Description |
+### Auth
+| Method | Endpoint | Description |
 |---|---|---|
-| `snapToGrid` | `(v, grid?)` | Snap a pixel value to the nearest grid cell |
-| `buildNewObject` | `(item)` | Build a scene object from a furniture catalogue item (handles ceiling detection) |
-| `formatAgo` | `(date)` | Relative time — "5m ago", "2d ago", "Just now" |
-| `passwordStrength` | `(password)` | Returns `{ label, color, textColor, w }` for a password string |
-| `floorLabel` | `(n)` | Floor number → display string ("Ground", "1st Fl.", …) |
-| `getFloorOption` | `(n)` | Floor number → `FLOOR_OPTIONS` entry |
-| `getRoomType` | `(value)` | Type string → `ROOM_TYPES` entry |
-| `clamp` | `(val, min, max)` | Clamp a number between min and max |
-| `round` | `(val, decimals?)` | Round to N decimal places (default 3) |
+| POST | `/api/auth/register` | Create account |
+| POST | `/api/auth/login` | Login, returns JWT |
+| GET | `/api/auth/me` | Get current user |
+| PUT | `/api/auth/me` | Update profile |
 
----
+### Projects (rooms)
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/projects` | List user's projects |
+| POST | `/api/projects` | Create project |
+| GET | `/api/projects/:id` | Get project |
+| PUT | `/api/projects/:id` | Update project |
+| DELETE | `/api/projects/:id` | Delete project |
+| POST | `/api/projects/:id/suggest` | AI layout suggestion |
 
-## API Reference
-
-All private endpoints require `Authorization: Bearer <token>` header.
-
-### Authentication
-
-| Method | Endpoint           | Access  | Description      |
-|--------|--------------------|---------|------------------|
-| POST   | /api/auth/register | Public  | Register a user  |
-| POST   | /api/auth/login    | Public  | Login            |
-| GET    | /api/auth/me       | Private | Get current user |
-| PUT    | /api/auth/me       | Private | Update profile   |
-
-### Projects (Room Designer)
-
-| Method | Endpoint                    | Access  | Description              |
-|--------|-----------------------------|---------|--------------------------|
-| GET    | /api/projects               | Private | List user projects       |
-| POST   | /api/projects               | Private | Create project           |
-| GET    | /api/projects/:id           | Private | Get project              |
-| PUT    | /api/projects/:id           | Private | Update project           |
-| DELETE | /api/projects/:id           | Private | Delete project           |
-| POST   | /api/projects/:id/share     | Private | Generate share link      |
-| GET    | /api/projects/shared/:token | Public  | View shared project      |
-| GET    | /api/projects/:id/suggest   | Private | Get AI layout suggestion |
-
-### Houses (House Designer)
-
-| Method | Endpoint                      | Access  | Description       |
-|--------|-------------------------------|---------|-------------------|
-| GET    | /api/houses                   | Private | List user houses  |
-| POST   | /api/houses                   | Private | Create house      |
-| GET    | /api/houses/:id               | Private | Get house         |
-| PUT    | /api/houses/:id               | Private | Update house      |
-| DELETE | /api/houses/:id               | Private | Delete house      |
-| POST   | /api/houses/:id/rooms         | Private | Add room          |
-| PUT    | /api/houses/:id/rooms/:roomId | Private | Update room       |
-| DELETE | /api/houses/:id/rooms/:roomId | Private | Delete room       |
+### Houses
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/houses` | List user's houses |
+| POST | `/api/houses` | Create house |
+| GET | `/api/houses/:id` | Get house with rooms |
+| PUT | `/api/houses/:id` | Update house |
+| DELETE | `/api/houses/:id` | Delete house |
+| POST | `/api/houses/:id/rooms` | Add room to house |
+| PUT | `/api/houses/:id/rooms/:roomId` | Update room |
+| DELETE | `/api/houses/:id/rooms/:roomId` | Delete room |
 
 ### Furniture
-
-| Method | Endpoint           | Access | Description               |
-|--------|--------------------|--------|---------------------------|
-| GET    | /api/furniture     | Public | List furniture (filtered) |
-| GET    | /api/furniture/:id | Public | Get single item           |
-| POST   | /api/furniture     | Admin  | Add furniture item        |
-| PUT    | /api/furniture/:id | Admin  | Update furniture item     |
-| DELETE | /api/furniture/:id | Admin  | Deactivate item           |
-
----
-
-## 3D Scene
-
-The `SceneViewer` component renders a realistic interior room using Three.js via `@react-three/fiber`.
-
-### Room geometry
-- **Floor** — oak hardwood (`#c8a96e`), low roughness for a polished look
-- **Walls** — warm off-white plaster (`#f5f0e8`), overridable per project via wall colour picker
-- **Ceiling** — bright white (`#faf7f2`) with `side={2}` so it renders from inside
-- **Skirting boards** — warm tan (`#d4b896`) boxes along all three visible walls
-- **Ceiling cornice** — thin strip along the top of each wall for architectural detail
-- **Front wall** — 8% opacity so the camera can see inside from any angle
-
-### Lighting rig
-| Light | Position | Purpose |
+| Method | Endpoint | Description |
 |---|---|---|
-| Ambient | scene-wide | 0.7 intensity warm white base fill |
-| Directional (sun) | right side, high | 2.2 intensity warm daylight, casts shadows |
-| Directional (fill) | left side | 0.5 intensity cool blue-white fill |
-| Point (ceiling) | centre ceiling | 0.8 intensity warm bounce |
-| Point (floor) | centre floor | 0.3 intensity warm floor bounce |
-
-### Selection
-Selected furniture gets a **vivid blue** (`#2563eb`) wireframe bounding box, a floating name tag, and a Remove button — all rendered as HTML overlays via `@react-three/drei`'s `Html` component.
-
-### Contact shadows
-`ContactShadows` from Drei adds soft, blurred shadows beneath all furniture for a grounded, realistic feel without expensive per-object shadow maps.
+| GET | `/api/furniture` | List furniture (supports `?type=` `&search=`) |
+| GET | `/api/furniture/:id` | Get single item |
 
 ---
 
-## UI Theme
+## 🛠️ Tech Stack
 
-The interface uses a strict black and white design system with red for destructive actions only.
+### Frontend
+- **React 18** — UI framework
+- **React Three Fiber** — 3D rendering (Three.js wrapper)
+- **@react-three/drei** — OrbitControls, TransformControls, Html, Environment
+- **Tailwind CSS** — Styling
+- **React Router v6** — Client-side routing
+- **Axios** — HTTP client
 
-| Element | Value |
-|---|---|
-| Page background | `#080808` — `#0d0d0d` |
-| Surface | `#141414` — `#222222` |
-| Primary button | White background, black text |
-| Destructive (delete) | Red `#ef4444` |
-| Accent / highlight | Pure white |
-| 3D scene background | Warm `#d4c5b0` ambient sky |
+### Backend
+- **Node.js + Express** — REST API
+- **MongoDB + Mongoose** — Database
+- **JWT** — Authentication
+- **bcryptjs** — Password hashing
+- **OpenAI API** — AI room suggestions
 
----
-
-## AR Compatibility
-
-WebXR `immersive-ar` with `hit-test` requires:
-
-| Platform | Requirement |
-|---|---|
-| Android | Chrome 81+ on an ARCore-compatible device |
-| iOS | Safari 15+ with WebXR viewer or compatible third-party browser |
-| Desktop | Not supported — compatibility message shown |
-
-The AR viewer page checks `navigator.xr.isSessionSupported('immersive-ar')` on load and shows a clear warning if the device is unsupported.
+### DevOps
+- **Docker + Docker Compose** — Containerisation
+- **Nginx** — Static file serving + SPA routing
+- **Vercel** — Frontend hosting
 
 ---
 
-## AI Layout System
+## 🎨 Design System
 
-The AI suggestion engine (`server/services/aiService.js`) is **rule-based**, not a trained model.
+The UI uses a **black-and-white base** with a **warm gold accent** (`#e8d5b7`):
 
-- Predefined zone configurations for 6 room styles: living, bedroom, office, dining, kitchen, bathroom
-- Furniture is positioned relative to actual room dimensions and wall boundaries
-- Rotation is set to face inward toward the room centre
-- Duplicate models within the same layout are avoided
-- Returns a cost estimate, a layout tip, and a size tip alongside the suggested objects
-- The user is shown a confirmation dialog before the layout is applied
+| Token | Value | Usage |
+|---|---|---|
+| `gray-950` | `#0d0d0d` | Main background |
+| `gray-900` | `#141414` | Cards, sidebars |
+| `gray-800` | `#222` | Borders |
+| `accent` | `#e8d5b7` | Selection, highlights |
+| `white` | `#fff` | Primary buttons, active states |
 
----
-
-## Known Limitations
-
-- GLB model files must be sourced and placed manually (not included in the repo)
-- AR hit-test accuracy depends on device sensor quality and ambient lighting
-- The AI layout engine is deterministic and rule-based — it does not learn or adapt
-- No real-time multi-user collaboration or sync
-- Password reset flow is not yet implemented
+Typography: **Inter** (UI) · **Playfair Display** (headings) · **JetBrains Mono** (code/labels)
 
 ---
 
-## License
+## 🔧 Performance Notes
 
-MIT
+- **Smooth drag**: `FloorPlan.jsx` and `FloorDesign2D.jsx` use `useRef` for drag state + `requestAnimationFrame` for canvas redraws. Zero React re-renders occur during a drag. `onUpdateRoom` (API call) fires once on `mouseup`.
+- **GLB models**: Loaded with `useGLTF` (cached) and `scene.clone()` per instance.
+- **Auto-save**: Debounced 1.5s — only fires when data actually changes.
+- **Canvas size**: Tracked with `ResizeObserver` (not `window.resize`) for accurate pixel dimensions.
+
+---
+
+## 📱 AR Requirements
+
+- HTTPS required (WebXR spec)
+- Android Chrome 81+ or iOS Safari 15+ with WebXR viewer
+- Hit-testing API support for surface detection
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repo
+2. Create a feature branch (`git checkout -b feature/xyz`)
+3. Commit (`git commit -m 'Add xyz'`)
+4. Push (`git push origin feature/xyz`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+MIT © 2025 InteriorAR
