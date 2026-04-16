@@ -398,7 +398,6 @@ const ARViewerPage = () => {
           placedRef.current = [];
 
           setArActive(false);
-          setStatus("");
 
         }
       );
@@ -523,7 +522,6 @@ const ARViewerPage = () => {
                     onClick={() => {
                       setSelectedObjIdx(i);
                       selectedUrlRef.current = obj.modelUrl;
-                      setStatus(`Selected ${obj.name}`);
                     }}
 
                     className={`min-w-[110px] px-3 py-3 rounded-2xl backdrop-blur-lg border 
