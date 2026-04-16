@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useProject } from '../context/ProjectContext';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -45,7 +45,7 @@ const ARViewerPage = () => {
     } else {
       setArSupported(false);
     }
-  }, [id]);
+  }, [id, currentProject, loadProject]);
 
   /* ───────── Scene Builder ───────── */
 
