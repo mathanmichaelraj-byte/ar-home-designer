@@ -22,7 +22,6 @@ const ARViewerPage = () => {
   const [arSupported, setArSupported] = useState(null);
   const [loading, setLoading] = useState(true);
   const [arActive, setArActive] = useState(false);
-  const [status, setStatus] = useState("");
   const [selectedObjIdx, setSelectedObjIdx] = useState(0);
 
   /* REFS */
@@ -173,10 +172,6 @@ const ARViewerPage = () => {
 
     if (!reticle.visible) {
 
-      setStatus(
-        "Move camera to detect surface"
-      );
-
       return;
 
     }
@@ -240,8 +235,6 @@ const ARViewerPage = () => {
         scene.add(model);
         placedRef.current.push(model);
 
-        setStatus("Object placed");
-
       },
 
       undefined,
@@ -272,7 +265,6 @@ const ARViewerPage = () => {
 
         placedRef.current.push(mesh);
 
-        setStatus("Fallback cube placed");
 
       }
 
@@ -312,12 +304,7 @@ const ARViewerPage = () => {
         );
 
       renderer.xr.setSession(session);
-
       setArActive(true);
-
-      setStatus(
-        "Move phone slowly to detect surface"
-      );
 
       /* Hit Test Setup */
 
@@ -410,7 +397,6 @@ const ARViewerPage = () => {
           placedRef.current = [];
 
           setArActive(false);
-          setStatus("");
 
         }
       );
@@ -419,10 +405,6 @@ const ARViewerPage = () => {
     catch (err) {
 
       console.error(err);
-
-      setStatus(
-        "Failed to start AR"
-      );
 
     }
 
@@ -439,9 +421,6 @@ const ARViewerPage = () => {
 
       sceneRef.current.remove(last);
 
-      setStatus(
-        "Removed last object"
-      );
 
     }
 
@@ -457,8 +436,6 @@ const ARViewerPage = () => {
 
     placedRef.current = [];
 
-    setStatus("All objects cleared");
-
   };
 
   if (loading) return null;
@@ -469,148 +446,151 @@ const ARViewerPage = () => {
   return (
 
     <>
-
+      {/* CANVAS */}
       <canvas
         ref={canvasRef}
         className="fixed inset-0 w-full h-full z-0"
       />
 
+      {/* OVERLAY */}
       <div
         ref={overlayRef}
-        className="fixed inset-0 z-10"
+        className="fixed inset-0 z-10 text-white"
       >
 
         {!arActive ? (
 
-          /* PRE AR */
+          /* PRE AR SCREEN */
 
-          <div className="min-h-screen flex flex-col items-center justify-center bg-black">
+          <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-black to-gray-900">
 
-            <h1 className="text-white text-3xl mb-8 font-semibold">
+            <h1 className="text-4xl font-semibold mb-4 tracking-wide">
               AR Preview
             </h1>
 
-            {arSupported && (
+            <p className="text-gray-400 mb-8 text-center max-w-sm">
+              Place furniture in your real space using your camera
+            </p>
 
+            {arSupported ? (
               <button
                 onClick={startAR}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md transition"
+                className="bg-white text-black px-8 py-3 rounded-2xl font-medium shadow-lg hover:scale-105 transition"
               >
-                Launch AR
+                Start AR
               </button>
-
+            ) : (
+              <p className="text-red-400">
+                AR not supported on this device
+              </p>
             )}
-
           </div>
 
         ) : (
 
           <>
-
-            {/* STATUS */}
-
-            <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur px-4 py-2 rounded-xl text-sm text-gray-800 pointer-events-none shadow">
-
-              {status}
-
+            {/* 🎯 CENTER RETICLE */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-14 h-14 border-2 border-white/60 rounded-full flex items-center justify-center">
+                <div className="w-2 h-2 bg-white rounded-full" />
+              </div>
             </div>
 
-            {/* MODEL SELECTOR */}
+            {/* 📡 STATUS */}
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 
+              bg-black/40 backdrop-blur-md px-5 py-2 rounded-full text-sm shadow-lg">
 
+              <span className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full animate-pulse ${
+                  reticleRef.current?.visible ? "bg-green-400" : "bg-red-400"
+                }`} />
+                {reticleRef.current?.visible
+                  ? "Surface detected"
+                  : "Move camera to scan"}
+              </span>
+            </div>
+
+            {/* 🧊 MODEL SELECTOR (GLASS CARDS) */}
             {objects.length > 0 && (
-
-              <div className="absolute bottom-28 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto">
+              <div className="absolute bottom-28 left-0 right-0 flex gap-3 px-4 overflow-x-auto">
 
                 {objects.map((obj, i) => (
 
                   <button
                     key={i}
-
                     onClick={() => {
-
                       setSelectedObjIdx(i);
-
-                      selectedUrlRef.current =
-                        obj.modelUrl;
-
-                      setStatus(
-                        `Selected ${obj.name}`
-                      );
-
+                      selectedUrlRef.current = obj.modelUrl;
                     }}
 
-                    className={`px-4 py-2 text-sm rounded-xl whitespace-nowrap transition shadow
+                    className={`min-w-[110px] px-3 py-3 rounded-2xl backdrop-blur-lg border 
+                    transition text-sm shadow-lg
 
                     ${selectedObjIdx === i
-                        ? "bg-blue-600 text-white"
-                        : "bg-white/90 text-gray-800"
-                      }
-
-                    `}
+                        ? "bg-white text-black border-white"
+                        : "bg-white/10 border-white/20 text-white"
+                      }`}
                   >
-
                     {obj.name}
-
                   </button>
 
                 ))}
 
               </div>
-
             )}
 
-            {/* ACTION BUTTONS */}
+            {/* 🎮 CONTROL PANEL */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
 
-            <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-3">
+              <div className="flex gap-3 bg-white/10 backdrop-blur-xl 
+                border border-white/20 rounded-2xl px-4 py-3 shadow-2xl">
 
-              <button
-                onClick={() =>
-                  placeModel(
-                    selectedUrlRef.current
-                  )
-                }
+                {/* PLACE */}
+                <button
+                  onClick={() => placeModel(selectedUrlRef.current)}
+                  className="p-3 bg-white text-black rounded-xl hover:scale-110 transition"
+                  title="Place object"
+                >
+                  📍
+                </button>
 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow transition"
-              >
-                Place
-              </button>
+                {/* REMOVE */}
+                <button
+                  onClick={removeLast}
+                  className="p-3 bg-red-500 rounded-xl hover:scale-110 transition"
+                  title="Undo"
+                >
+                  ↩️
+                </button>
 
-              <button
-                onClick={removeLast}
+                {/* CLEAR */}
+                <button
+                  onClick={clearPlaced}
+                  className="p-3 bg-gray-300 text-black rounded-xl hover:scale-110 transition"
+                  title="Clear all"
+                >
+                  🧹
+                </button>
 
-                className="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl shadow transition"
-              >
-                Remove
-              </button>
+                {/* EXIT */}
+                <button
+                  onClick={() =>
+                    rendererRef.current?.xr
+                      ?.getSession()
+                      ?.end()
+                  }
+                  className="p-3 bg-black rounded-xl hover:scale-110 transition"
+                  title="Exit AR"
+                >
+                  ✖
+                </button>
 
-              <button
-                onClick={clearPlaced}
-
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-5 py-2.5 rounded-xl shadow transition"
-              >
-                Clear
-              </button>
-
-              <button
-                onClick={() =>
-                  rendererRef.current?.xr
-                    ?.getSession()
-                    ?.end()
-                }
-
-                className="bg-white hover:bg-gray-100 text-gray-900 px-5 py-2.5 rounded-xl shadow transition"
-              >
-                Exit
-              </button>
+              </div>
 
             </div>
-
           </>
-
         )}
-
       </div>
-
     </>
 
   );
