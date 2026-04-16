@@ -22,7 +22,6 @@ const ARViewerPage = () => {
   const [arSupported, setArSupported] = useState(null);
   const [loading, setLoading] = useState(true);
   const [arActive, setArActive] = useState(false);
-  const [status, setStatus] = useState("");
   const [selectedObjIdx, setSelectedObjIdx] = useState(0);
 
   /* REFS */
