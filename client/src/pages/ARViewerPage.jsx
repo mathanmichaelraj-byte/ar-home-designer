@@ -58,6 +58,7 @@ const ARViewerPage = () => {
     rendererRef.current = renderer;
 
     const scene = new THREE.Scene();
+    scene.background = null;
     sceneRef.current = scene;
 
     // Lights
@@ -132,7 +133,7 @@ const ARViewerPage = () => {
 
     try {
       const sessionInit = {
-        requiredFeatures: ['hit-test'],
+        requiredFeatures: ['hit-test', 'local-floor'],
         optionalFeatures: ['dom-overlay'],
       };
       if (overlayRef.current) {
@@ -143,7 +144,7 @@ const ARViewerPage = () => {
       const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
 
       // 🔑 Critical: hand the session to Three.js
-      await renderer.xr.setSession(session);
+      renderer.xr.setSession(session);
       setArActive(true);
       setStatus('Slowly pan your camera to detect surfaces…');
 
@@ -233,7 +234,7 @@ const ARViewerPage = () => {
       {/* Three.js draws here — covers full screen when AR is active */}
       <canvas
         ref={canvasRef}
-        className={arActive ? 'fixed inset-0 w-full h-full z-0' : 'hidden'}
+        className="fixed inset-0 w-full h-full z-0"
       />
 
       {/* HUD overlay — dom-overlay root */}
