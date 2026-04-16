@@ -304,7 +304,6 @@ const ARViewerPage = () => {
         );
 
       renderer.xr.setSession(session);
-
       setArActive(true);
 
       /* Hit Test Setup */
