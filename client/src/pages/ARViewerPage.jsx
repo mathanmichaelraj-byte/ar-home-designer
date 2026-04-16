@@ -172,10 +172,6 @@ const ARViewerPage = () => {
 
     if (!reticle.visible) {
 
-      setStatus(
-        "Move camera to detect surface"
-      );
-
       return;
 
     }
@@ -239,8 +235,6 @@ const ARViewerPage = () => {
         scene.add(model);
         placedRef.current.push(model);
 
-        setStatus("Object placed");
-
       },
 
       undefined,
@@ -271,7 +265,6 @@ const ARViewerPage = () => {
 
         placedRef.current.push(mesh);
 
-        setStatus("Fallback cube placed");
 
       }
 
@@ -313,10 +306,6 @@ const ARViewerPage = () => {
       renderer.xr.setSession(session);
 
       setArActive(true);
-
-      setStatus(
-        "Move phone slowly to detect surface"
-      );
 
       /* Hit Test Setup */
 
@@ -419,10 +408,6 @@ const ARViewerPage = () => {
 
       console.error(err);
 
-      setStatus(
-        "Failed to start AR"
-      );
-
     }
 
   };
@@ -438,9 +423,6 @@ const ARViewerPage = () => {
 
       sceneRef.current.remove(last);
 
-      setStatus(
-        "Removed last object"
-      );
 
     }
 
@@ -455,8 +437,6 @@ const ARViewerPage = () => {
     );
 
     placedRef.current = [];
-
-    setStatus("All objects cleared");
 
   };
 
