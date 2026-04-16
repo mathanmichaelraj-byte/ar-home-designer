@@ -7,7 +7,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 const ARViewerPage = () => {
   const { id } = useParams();
   const { currentProject, loadProject } = useProject();
-  const navigate = useNavigate();
 
   const [arSupported, setArSupported] = useState(null);
   const [loading, setLoading] = useState(true);
