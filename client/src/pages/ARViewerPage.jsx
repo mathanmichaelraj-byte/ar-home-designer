@@ -1,57 +1,87 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import { useProject } from '../context/ProjectContext';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback
+} from "react";
+
+import { useParams } from "react-router-dom";
+import { useProject } from "../context/ProjectContext";
+
+import * as THREE from "three";
+import { GLTFLoader }
+from "three/examples/jsm/loaders/GLTFLoader";
 
 const ARViewerPage = () => {
+
   const { id } = useParams();
   const { currentProject, loadProject } = useProject();
+
+  /* STATE */
 
   const [arSupported, setArSupported] = useState(null);
   const [loading, setLoading] = useState(true);
   const [arActive, setArActive] = useState(false);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState("");
   const [selectedObjIdx, setSelectedObjIdx] = useState(0);
+
+  /* REFS */
 
   const overlayRef = useRef(null);
   const canvasRef = useRef(null);
 
   const rendererRef = useRef(null);
   const sceneRef = useRef(null);
+  const cameraRef = useRef(null);
+
   const reticleRef = useRef(null);
-  const hitSourceRef = useRef(null);
-  const hitSourceRequestedRef = useRef(false);
+
+  const hitTestSourceRef = useRef(null);
+  const localSpaceRef = useRef(null);
+
   const placedRef = useRef([]);
   const selectedUrlRef = useRef(null);
 
   /* ───────── Bootstrap ───────── */
 
   useEffect(() => {
+
     const init = async () => {
+
       if (id && !currentProject) {
         await loadProject(id).catch(() => {});
       }
+
       setLoading(false);
+
     };
 
     init();
 
     if (navigator.xr) {
+
       navigator.xr
-        .isSessionSupported('immersive-ar')
+        .isSessionSupported("immersive-ar")
         .then(setArSupported)
         .catch(() => setArSupported(false));
-    } else {
-      setArSupported(false);
+
     }
+    else {
+
+      setArSupported(false);
+
+    }
+
   }, [id, currentProject, loadProject]);
 
   /* ───────── Scene Builder ───────── */
 
   const buildScene = useCallback(() => {
+
+    if (rendererRef.current)
+      return rendererRef.current;
+
     const canvas = canvasRef.current;
-    if (!canvas || rendererRef.current) return rendererRef.current;
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
@@ -59,42 +89,79 @@ const ARViewerPage = () => {
       antialias: true
     });
 
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(
+      window.devicePixelRatio
+    );
+
+    renderer.setSize(
+      window.innerWidth,
+      window.innerHeight
+    );
+
     renderer.xr.enabled = true;
 
     rendererRef.current = renderer;
+
+    /* Scene */
 
     const scene = new THREE.Scene();
     scene.background = null;
     sceneRef.current = scene;
 
-    /* Lights */
+    /* Camera */
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1.2));
+    const camera =
+      new THREE.PerspectiveCamera();
 
-    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    cameraRef.current = camera;
+
+    /* Lighting */
+
+    const hemi =
+      new THREE.HemisphereLight(
+        0xffffff,
+        0xbbbbff,
+        1.2
+      );
+
+    scene.add(hemi);
+
+    const dir =
+      new THREE.DirectionalLight(
+        0xffffff,
+        0.8
+      );
+
     dir.position.set(1, 2, 1);
     scene.add(dir);
 
     /* Reticle */
 
-    const geo = new THREE.RingGeometry(0.08, 0.1, 32)
-      .rotateX(-Math.PI / 2);
+    const geo =
+      new THREE.RingGeometry(
+        0.08,
+        0.1,
+        32
+      ).rotateX(-Math.PI / 2);
 
-    const mat = new THREE.MeshBasicMaterial({
-      color: 0xe8d5b7,
-      side: THREE.DoubleSide
-    });
+    const mat =
+      new THREE.MeshBasicMaterial({
+        color: 0xe8d5b7,
+        side: THREE.DoubleSide
+      });
 
-    const reticle = new THREE.Mesh(geo, mat);
+    const reticle =
+      new THREE.Mesh(geo, mat);
+
     reticle.visible = false;
     reticle.matrixAutoUpdate = false;
 
     scene.add(reticle);
+
     reticleRef.current = reticle;
 
     return renderer;
+
   }, []);
 
   /* ───────── Place Model ───────── */
@@ -104,14 +171,24 @@ const ARViewerPage = () => {
     const scene = sceneRef.current;
     const reticle = reticleRef.current;
 
-    if (!scene || !reticle || !reticle.visible) {
-      setStatus("Move camera to detect surface");
+    if (!reticle.visible) {
+
+      setStatus(
+        "Move camera to detect surface"
+      );
+
       return;
+
     }
 
-    const position = new THREE.Vector3();
-    const quaternion = new THREE.Quaternion();
-    const scale = new THREE.Vector3();
+    const position =
+      new THREE.Vector3();
+
+    const quaternion =
+      new THREE.Quaternion();
+
+    const scale =
+      new THREE.Vector3();
 
     reticle.matrix.decompose(
       position,
@@ -119,38 +196,52 @@ const ARViewerPage = () => {
       scale
     );
 
-    const loader = new GLTFLoader();
+    const loader =
+      new GLTFLoader();
 
     loader.load(
+
       url,
 
       (gltf) => {
 
-        const model = gltf.scene;
+        const model =
+          gltf.scene;
 
         model.position.copy(position);
         model.quaternion.copy(quaternion);
 
-        /* Auto Scale */
+        /* Auto scale */
 
-        const box = new THREE.Box3()
-          .setFromObject(model);
+        const box =
+          new THREE.Box3()
+            .setFromObject(model);
 
-        const size = box.getSize(
-          new THREE.Vector3()
-        );
+        const size =
+          box.getSize(
+            new THREE.Vector3()
+          );
 
         const maxDim =
-          Math.max(size.x, size.y, size.z);
+          Math.max(
+            size.x,
+            size.y,
+            size.z
+          );
 
         if (maxDim > 0) {
-          model.scale.setScalar(0.5 / maxDim);
+
+          model.scale.setScalar(
+            0.5 / maxDim
+          );
+
         }
 
         scene.add(model);
         placedRef.current.push(model);
 
-        setStatus("Object placed ✅");
+        setStatus("Object placed");
+
       },
 
       undefined,
@@ -163,22 +254,28 @@ const ARViewerPage = () => {
           new THREE.Mesh(
 
             new THREE.BoxGeometry(
-              0.3, 0.4, 0.3
+              0.3,
+              0.4,
+              0.3
             ),
 
             new THREE.MeshStandardMaterial({
               color: 0xe8d5b7
             })
+
           );
 
         mesh.position.copy(position);
         mesh.position.y += 0.2;
 
         scene.add(mesh);
+
         placedRef.current.push(mesh);
 
         setStatus("Fallback cube placed");
+
       }
+
     );
 
   }, []);
@@ -187,39 +284,31 @@ const ARViewerPage = () => {
 
   const startAR = async () => {
 
-    if (!navigator.xr || !arSupported)
-      return;
+    if (!arSupported) return;
 
-    const renderer = buildScene();
-    if (!renderer) return;
+    const renderer =
+      buildScene();
 
     try {
 
-      const sessionInit = {
-
-        requiredFeatures: [
-          'hit-test',
-          'local-floor'
-        ],
-
-        optionalFeatures: [
-          'dom-overlay'
-        ]
-
-      };
-
-      if (overlayRef.current) {
-
-        sessionInit.domOverlay = {
-          root: overlayRef.current
-        };
-
-      }
-
       const session =
         await navigator.xr.requestSession(
-          'immersive-ar',
-          sessionInit
+          "immersive-ar",
+          {
+            requiredFeatures: [
+              "hit-test"
+            ],
+
+            optionalFeatures: [
+              "dom-overlay",
+              "local-floor"
+            ],
+
+            domOverlay: {
+              root: overlayRef.current
+            }
+
+          }
         );
 
       renderer.xr.setSession(session);
@@ -227,10 +316,27 @@ const ARViewerPage = () => {
       setArActive(true);
 
       setStatus(
-        "Move phone to detect surface"
+        "Move phone slowly to detect surface"
       );
 
-      /* Default Model */
+      /* Hit Test Setup */
+
+      const viewerSpace =
+        await session.requestReferenceSpace(
+          "viewer"
+        );
+
+      hitTestSourceRef.current =
+        await session.requestHitTestSource({
+          space: viewerSpace
+        });
+
+      localSpaceRef.current =
+        await session.requestReferenceSpace(
+          "local-floor"
+        );
+
+      /* Default model */
 
       const objs =
         currentProject?.objects ?? [];
@@ -238,114 +344,84 @@ const ARViewerPage = () => {
       if (objs.length > 0) {
 
         const obj =
-          objs[selectedObjIdx] ?? objs[0];
+          objs[selectedObjIdx] ??
+          objs[0];
 
         selectedUrlRef.current =
-          obj.modelUrl ??
-          `/models/${obj.name
-            .toLowerCase()
-            .replace(/\s+/g, '_')}.glb`;
+          obj.modelUrl;
 
       }
 
       /* Animation Loop */
 
-      renderer.setAnimationLoop((_, frame) => {
+      renderer.setAnimationLoop(
+        (timestamp, frame) => {
 
-        if (!frame) return;
+          if (frame) {
 
-        const refSpace =
-          renderer.xr.getReferenceSpace();
-
-        const xrSession =
-          renderer.xr.getSession();
-
-        /* Request Hit Test */
-
-        if (!hitSourceRequestedRef.current) {
-
-          hitSourceRequestedRef.current = true;
-
-          xrSession
-            .requestReferenceSpace('viewer')
-
-            .then((viewerSpace) =>
-              xrSession.requestHitTestSource({
-                space: viewerSpace
-              })
-            )
-
-            .then((source) => {
-
-              hitSourceRef.current = source;
-
-              setStatus(
-                "Surface detected ✔"
+            const hitResults =
+              frame.getHitTestResults(
+                hitTestSourceRef.current
               );
 
-            });
+            if (hitResults.length > 0) {
 
-        }
+              const hit =
+                hitResults[0];
 
-        /* Update Reticle */
+              const pose =
+                hit.getPose(
+                  localSpaceRef.current
+                );
 
-        if (hitSourceRef.current) {
+              reticleRef.current.visible = true;
 
-          const hits =
-            frame.getHitTestResults(
-              hitSourceRef.current
-            );
+              reticleRef.current.matrix
+                .fromArray(
+                  pose.transform.matrix
+                );
 
-          if (hits.length > 0) {
+            }
+            else {
 
-            const pose =
-              hits[0].getPose(refSpace);
+              reticleRef.current.visible = false;
 
-            reticleRef.current.visible = true;
-
-            reticleRef.current.matrix
-              .fromArray(
-                pose.transform.matrix
-              );
-
-          }
-          else {
-
-            reticleRef.current.visible = false;
+            }
 
           }
 
+          renderer.render(
+            sceneRef.current,
+            renderer.xr.getCamera()
+          );
+
         }
+      );
 
-        renderer.render(
-          sceneRef.current,
-          renderer.xr.getCamera()
-        );
+      session.addEventListener(
+        "end",
+        () => {
 
-      });
+          renderer.setAnimationLoop(null);
 
-      session.addEventListener('end', () => {
+          hitTestSourceRef.current = null;
+          localSpaceRef.current = null;
 
-        renderer.setAnimationLoop(null);
+          placedRef.current = [];
 
-        hitSourceRef.current = null;
-        hitSourceRequestedRef.current = false;
+          setArActive(false);
+          setStatus("");
 
-        placedRef.current = [];
-
-        setArActive(false);
-        setStatus('');
-
-      });
+        }
+      );
 
     }
-
     catch (err) {
 
       console.error(err);
 
       setStatus(
-        "AR failed to start"
+        "Failed to start AR"
       );
 
     }
@@ -363,7 +439,9 @@ const ARViewerPage = () => {
 
       sceneRef.current.remove(last);
 
-      setStatus("Removed last object");
+      setStatus(
+        "Removed last object"
+      );
 
     }
 
@@ -379,7 +457,7 @@ const ARViewerPage = () => {
 
     placedRef.current = [];
 
-    setStatus("All cleared");
+    setStatus("All objects cleared");
 
   };
 
@@ -399,16 +477,16 @@ const ARViewerPage = () => {
 
       <div
         ref={overlayRef}
-        className="fixed inset-0 z-10 pointer-events-auto"
+        className="fixed inset-0 z-10"
       >
 
         {!arActive ? (
 
-          /* PRE AR SCREEN */
+          /* PRE AR */
 
-          <div className="min-h-screen flex flex-col items-center justify-center">
+          <div className="min-h-screen flex flex-col items-center justify-center bg-black">
 
-            <h1 className="text-white text-3xl mb-6">
+            <h1 className="text-white text-3xl mb-8 font-semibold">
               AR Preview
             </h1>
 
@@ -416,9 +494,9 @@ const ARViewerPage = () => {
 
               <button
                 onClick={startAR}
-                className="bg-white text-black px-6 py-3 rounded-xl"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md transition"
               >
-                🚀 Launch AR
+                Launch AR
               </button>
 
             )}
@@ -427,21 +505,21 @@ const ARViewerPage = () => {
 
         ) : (
 
-          /* AR UI */
-
           <>
 
-            {/* Status */}
+            {/* STATUS */}
 
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 bg-black/60 text-white px-4 py-2 rounded-full text-xs pointer-events-none">
+            <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur px-4 py-2 rounded-xl text-sm text-gray-800 pointer-events-none shadow">
+
               {status}
+
             </div>
 
-            {/* Scrollable Models */}
+            {/* MODEL SELECTOR */}
 
             {objects.length > 0 && (
 
-              <div className="absolute bottom-28 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto pointer-events-auto">
+              <div className="absolute bottom-28 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto">
 
                 {objects.map((obj, i) => (
 
@@ -461,11 +539,14 @@ const ARViewerPage = () => {
 
                     }}
 
-                    className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap
-                      ${selectedObjIdx === i
-                        ? 'bg-amber-300 text-black'
-                        : 'bg-black/60 text-white'}`}
+                    className={`px-4 py-2 text-sm rounded-xl whitespace-nowrap transition shadow
 
+                    ${selectedObjIdx === i
+                        ? "bg-blue-600 text-white"
+                        : "bg-white/90 text-gray-800"
+                      }
+
+                    `}
                   >
 
                     {obj.name}
@@ -480,7 +561,7 @@ const ARViewerPage = () => {
 
             {/* ACTION BUTTONS */}
 
-            <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-3 pointer-events-auto">
+            <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-3">
 
               <button
                 onClick={() =>
@@ -488,21 +569,24 @@ const ARViewerPage = () => {
                     selectedUrlRef.current
                   )
                 }
-                className="bg-amber-300 text-black px-5 py-2.5 rounded-full"
+
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow transition"
               >
-                ➕ Place
+                Place
               </button>
 
               <button
                 onClick={removeLast}
-                className="bg-red-500 text-white px-5 py-2.5 rounded-full"
+
+                className="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl shadow transition"
               >
-                🗑 Remove
+                Remove
               </button>
 
               <button
                 onClick={clearPlaced}
-                className="bg-black/60 text-white px-5 py-2.5 rounded-full"
+
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-5 py-2.5 rounded-xl shadow transition"
               >
                 Clear
               </button>
@@ -513,7 +597,8 @@ const ARViewerPage = () => {
                     ?.getSession()
                     ?.end()
                 }
-                className="bg-white text-black px-5 py-2.5 rounded-full"
+
+                className="bg-white hover:bg-gray-100 text-gray-900 px-5 py-2.5 rounded-xl shadow transition"
               >
                 Exit
               </button>
