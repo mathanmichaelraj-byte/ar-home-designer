@@ -359,7 +359,10 @@ const ARViewerPage = () => {
       <canvas ref={canvasRef} className="fixed inset-0 w-full h-full z-0" />
 
       {/* DOM overlay — all interactive UI */}
-      <div ref={overlayRef} className="fixed inset-0 z-10">
+      <div
+        ref={overlayRef}
+        className="fixed inset-0 z-10 overflow-y-auto touch-pan-y"
+      >
 
         {/* ── Pre-AR screen ────────────────────────────────────── */}
         {!arActive && (
