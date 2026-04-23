@@ -1,14 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
 const {
-  getProjects, getProject, getSharedProject,
-  createProject, updateProject, deleteProject,
-  shareProject, suggestLayout,
+  getProjects, createProject, getProject,
+  updateProject, deleteProject, shareProject,
+  getSharedProject, suggestLayout,
 } = require('../controllers/projectController');
+const { protect } = require('../middleware/auth');
 
+/* Public */
 router.get('/shared/:token', getSharedProject);
 
+/* Protected */
 router.use(protect);
 router.route('/').get(getProjects).post(createProject);
 router.route('/:id').get(getProject).put(updateProject).delete(deleteProject);
