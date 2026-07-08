@@ -83,7 +83,7 @@ const DashboardPage = () => {
           <div>
             <p className="text-xs font-mono text-gray-600 mb-1 tracking-wider uppercase">Room Designer</p>
             <h1 className="font-display text-3xl md:text-4xl font-bold text-white">
-              Hello, {user?.name?.split(' ')[0]} 👋
+              Hello, {user?.name?.split(' ')[0]}
             </h1>
             <p className="text-gray-500 mt-2 text-sm">
               {loading ? '—' : `${validProjects.length} project${validProjects.length !== 1 ? 's' : ''}`}

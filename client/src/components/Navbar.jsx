@@ -102,13 +102,21 @@ const Navbar = () => {
                     <Link to="/dashboard" onClick={() => setShowProjects(false)}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300
                                  hover:text-white hover:bg-gray-800 transition-colors">
-                      <span className="w-7 h-7 rounded-lg bg-gray-800 flex items-center justify-center text-sm">🛋️</span>
+                      <span className="w-7 h-7 rounded-lg bg-gray-800 flex items-center justify-center">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                        </svg>
+                      </span>
                       Room Designer
                     </Link>
                     <Link to="/houses" onClick={() => setShowProjects(false)}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300
                                  hover:text-white hover:bg-gray-800 transition-colors">
-                      <span className="w-7 h-7 rounded-lg bg-gray-800 flex items-center justify-center text-sm">🏡</span>
+                      <span className="w-7 h-7 rounded-lg bg-gray-800 flex items-center justify-center">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                        </svg>
+                      </span>
                       House Designer
                     </Link>
                   </div>
@@ -161,11 +169,17 @@ const Navbar = () => {
             <>
               <Link to="/dashboard" className="flex items-center gap-3 px-3 py-2.5 rounded-xl
                 text-gray-300 hover:text-white hover:bg-gray-800 text-sm transition-colors">
-                <span>🛋️</span> Room Designer
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+                </svg>
+                Room Designer
               </Link>
               <Link to="/houses" className="flex items-center gap-3 px-3 py-2.5 rounded-xl
                 text-gray-300 hover:text-white hover:bg-gray-800 text-sm transition-colors">
-                <span>🏡</span> House Designer
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                </svg>
+                House Designer
               </Link>
               <Link to="/profile" className="flex items-center gap-3 px-3 py-2.5 rounded-xl
                 text-gray-300 hover:text-white hover:bg-gray-800 text-sm transition-colors">

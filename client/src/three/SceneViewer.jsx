@@ -220,7 +220,12 @@ function EmptyHint({ W, L }) {
         border:'1px solid rgba(0,0,0,0.08)', borderRadius:14,
         padding:'18px 28px', boxShadow:'0 4px 24px rgba(0,0,0,0.10)',
       }}>
-        <div style={{fontSize:30,marginBottom:8}}>🛋️</div>
+        <div style={{fontSize:24,marginBottom:8}}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
+            <path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/>
+            <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+          </svg>
+        </div>
         <div style={{fontSize:13,fontWeight:700,color:'#111',marginBottom:4}}>Room is empty</div>
         <div style={{fontSize:11,color:'#888',lineHeight:1.5}}>Add furniture from the panel on the left</div>
       </div>

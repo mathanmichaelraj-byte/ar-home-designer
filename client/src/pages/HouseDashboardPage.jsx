@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useHouse } from '../context/HouseContext';
-import { ROOM_EMOJI, ROOM_BADGE_CLS } from '../utils/constants';
+import { ROOM_BADGE_CLS } from '../utils/constants';
 
-const ROOM_EMOJIS  = ROOM_EMOJI;
-const ROOM_COLORS  = ROOM_BADGE_CLS;
+const ROOM_COLORS = ROOM_BADGE_CLS;
 
 const SkeletonCard = () => (
   <div className="card animate-pulse">
@@ -81,7 +80,7 @@ const HouseDashboardPage = () => {
           <div>
             <p className="text-xs font-mono text-gray-600 mb-1 tracking-wider uppercase">House Designer</p>
             <h1 className="font-display text-3xl md:text-4xl font-bold text-white">
-              Hello, {user?.name?.split(' ')[0]} 👋
+              Hello, {user?.name?.split(' ')[0]}
             </h1>
             <p className="text-gray-500 mt-2 text-sm">
               {loading ? '—' : `${houses.length} house${houses.length !== 1 ? 's' : ''} designed`}
@@ -163,15 +162,17 @@ const HouseDashboardPage = () => {
                                 group-hover:border-gray-700 transition-colors overflow-hidden">
                   <div className="absolute inset-0 bg-grid opacity-30" />
                   {(house.rooms || []).length === 0 ? (
-                    <span className="text-4xl opacity-20 relative z-10">🏡</span>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8" className="opacity-20 relative z-10 text-gray-400">
+                      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                      <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
                   ) : (
                     (house.rooms || []).slice(0, 6).map((room, ri) => (
                       <div key={ri}
                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg
                                        border text-xs font-medium relative z-10
                                        ${ROOM_COLORS[room.type] || ROOM_COLORS.other}`}>
-                        <span className="text-sm leading-none">{ROOM_EMOJIS[room.type] || '🏠'}</span>
-                        <span className="text-gray-300 max-w-[60px] truncate">{room.name}</span>
+                        <span className="text-gray-300 max-w-[80px] truncate">{room.name}</span>
                       </div>
                     ))
                   )}
