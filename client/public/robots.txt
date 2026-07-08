@@ -1,2 +1,9 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /dashboard
+Disallow: /designer
+Disallow: /houses
+Disallow: /ar/
+Disallow: /profile
+
+Sitemap: https://ar-home-designer.vercel.app/sitemap.xml

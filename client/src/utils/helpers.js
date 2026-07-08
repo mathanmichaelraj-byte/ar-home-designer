@@ -11,15 +11,17 @@ export const snapToGrid = (v, grid = 40) => Math.round(v / grid) * grid;
  * Build a new scene object from a furniture catalogue item.
  * Ceiling-mounted items (fan, chandelier, etc.) start at y = 2.5.
  */
-export const buildNewObject = (item) => {
+export const buildNewObject = (item, roomDimensions) => {
   const isCeiling = CEILING_KEYWORDS.some(k =>
     item.name.toLowerCase().includes(k)
   );
+  const cx = (roomDimensions?.width  ?? 0) / 2;
+  const cz = (roomDimensions?.length ?? 0) / 2;
   return {
     furnitureId: item._id,
     name:        item.name,
     modelUrl:    item.modelUrl,
-    position:    { x: 0, y: isCeiling ? 2.5 : 0, z: 0 },
+    position:    { x: cx, y: isCeiling ? 2.5 : 0, z: cz },
     rotation:    { x: 0, y: 0, z: 0 },
     scale:       { x: 1, y: 1, z: 1 },
     color:       '#cccccc',

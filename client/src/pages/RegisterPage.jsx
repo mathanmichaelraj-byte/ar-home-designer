@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
 import { passwordStrength } from '../utils/helpers';
 
@@ -32,6 +33,11 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 py-20 relative overflow-hidden">
+      <Helmet>
+        <title>Create Account — InteriorAR</title>
+        <meta name="description" content="Create a free InteriorAR account and start designing rooms in 3D with AR furniture preview. No credit card required." />
+        <link rel="canonical" href="https://ar-home-designer.vercel.app/register" />
+      </Helmet>
       {/* Background */}
       <div className="absolute inset-0 bg-grid opacity-60 pointer-events-none" />
       <div className="absolute inset-0 pointer-events-none"

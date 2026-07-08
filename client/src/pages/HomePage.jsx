@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
 
 const FEATURES = [
@@ -76,6 +77,14 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen overflow-x-hidden">
+      <Helmet>
+        <title>InteriorAR — AI-Powered AR Interior Designer</title>
+        <meta name="description" content="Design rooms in 2D, visualise them in 3D, and see furniture placed in your real space via Augmented Reality — all in the browser. Free to start." />
+        <link rel="canonical" href="https://ar-home-designer.vercel.app/" />
+        <meta property="og:title" content="InteriorAR — AI-Powered AR Interior Designer" />
+        <meta property="og:description" content="Design rooms in 2D, visualise in 3D, and see furniture in your real space via AR — all in the browser." />
+        <meta property="og:url" content="https://ar-home-designer.vercel.app/" />
+      </Helmet>
 
       {/* ── Hero ───────────────────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center px-5 pt-20 pb-16 overflow-hidden">

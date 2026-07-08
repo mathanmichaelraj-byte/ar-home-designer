@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider }    from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
 import { HouseProvider }   from './context/HouseContext';
@@ -19,6 +20,7 @@ import ProfilePage         from './pages/ProfilePage';
 
 function App() {
   return (
+    <HelmetProvider>
     <AuthProvider>
       <ProjectProvider>
         <HouseProvider>
@@ -54,6 +56,7 @@ function App() {
         </HouseProvider>
       </ProjectProvider>
     </AuthProvider>
+    </HelmetProvider>
   );
 }
 

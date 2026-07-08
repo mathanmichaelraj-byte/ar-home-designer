@@ -51,11 +51,10 @@ export const ProjectProvider = ({ children }) => {
   }, [currentProject]);
 
   const addObject = (furnitureItem) => {
-    const obj = buildNewObject(furnitureItem);
-    setCurrentProject((prev) => ({
-      ...prev,
-      objects: [...(prev?.objects || []), obj],
-    }));
+    setCurrentProject((prev) => {
+      const obj = buildNewObject(furnitureItem, prev?.roomDimensions);
+      return { ...prev, objects: [...(prev?.objects || []), obj] };
+    });
   };
 
 

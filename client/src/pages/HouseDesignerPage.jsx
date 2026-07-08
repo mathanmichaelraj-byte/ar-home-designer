@@ -467,12 +467,14 @@ export default function HouseDesignerPage() {
   const handleAddObject = useCallback(async (item) => {
     if (!currentRoom) return;
     const isCeil = ['ceiling','fan','chandelier'].some(k => item.name?.toLowerCase().includes(k));
+    const cx = (currentRoom.dimensions?.width  ?? 0) / 2;
+    const cz = (currentRoom.dimensions?.length ?? 0) / 2;
     await updateRoom(currentRoom._id, {
       objects: [...(currentRoom.objects||[]), {
         furnitureId: item._id,
         name:        item.name,
         modelUrl:    item.modelUrl,
-        position:    { x:0, y: isCeil ? 2.4 : 0, z:0 },
+        position:    { x: cx, y: isCeil ? 2.4 : 0, z: cz },
         rotation:    { x:0, y:0, z:0 },
         scale:       { x:1, y:1, z:1 },
       }],

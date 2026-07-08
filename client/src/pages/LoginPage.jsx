@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
@@ -25,6 +26,12 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-5 py-20 relative overflow-hidden">
+      <Helmet>
+        <title>Sign In — InteriorAR</title>
+        <meta name="description" content="Sign in to InteriorAR and continue designing your rooms in 3D with AR furniture preview." />
+        <link rel="canonical" href="https://ar-home-designer.vercel.app/login" />
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
       {/* Background */}
       <div className="absolute inset-0 bg-grid opacity-60 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-radial pointer-events-none"
